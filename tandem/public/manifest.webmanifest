@@ -1,0 +1,10 @@
+{
+  "name": "Tandem",
+  "short_name": "Tandem",
+  "description": "Local-first caregiving coordination with Trust Bridge handovers and Ground Truth records.",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#f6efe5",
+  "theme_color": "#0f4c5c",
+  "icons": []
+}
