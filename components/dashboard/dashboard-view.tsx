@@ -187,13 +187,13 @@ export function DashboardView() {
 
       <section className="mt-4 grid gap-3 sm:grid-cols-3">
         <Button asChild size="lg" variant="secondary">
-          <Link href="/capture">Upload doctor memo</Link>
+          <Link href="/inbox">Review forwarded items</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
           <Link href="/handover">Generate handover</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
-          <Link href="/meeting">Meeting notes</Link>
+          <Link href="/capture">Manual upload</Link>
         </Button>
       </section>
     </div>

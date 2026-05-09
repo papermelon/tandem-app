@@ -27,6 +27,28 @@ export type FamilyMember = {
   avatar: string;
   phone?: string;
   isDefaultCaregiver?: boolean;
+  categoryPreferences?: TaskCategory[];
+  loadCapacityPct?: number;
+};
+
+export type RoutingCandidate = {
+  memberId: string;
+  score: number;
+  loadPct: number;
+  reasons: string[];
+  components: {
+    categoryAffinity: number;
+    inverseLoad: number;
+    explicitPref: number;
+    proximity: number;
+    defaultBias: number;
+  };
+};
+
+export type RoutingContext = {
+  members: FamilyMember[];
+  tasks: Task[];
+  now?: Date;
 };
 
 export type CareRecipient = {
@@ -74,6 +96,48 @@ export type DocumentRecord = {
   importantDates: string[];
   institutions: string[];
   careItems: string[];
+};
+
+export type CaptureStatus = "processing" | "pending_review" | "saved" | "ignored" | "failed";
+export type CaptureSourceType = "text" | "image" | "document" | "voice";
+export type ExtractedItemStatus = "pending" | "approved" | "deleted";
+export type ExtractedItemType = "appointment" | "task" | "medication" | "note" | "document" | "concern";
+
+export type CaptureEvent = {
+  id: string;
+  platform: "telegram" | "web";
+  sourceType: CaptureSourceType;
+  senderName?: string;
+  platformSenderId?: string;
+  platformMessageId?: string;
+  originalFilePath?: string;
+  originalFileUrl?: string;
+  originalFileName?: string;
+  originalFileMimeType?: string;
+  rawText?: string;
+  extractedText?: string;
+  aiSummary?: string;
+  status: CaptureStatus;
+  extractionJson?: ExtractionResult;
+  createdAt: string;
+  updatedAt: string;
+  items: ExtractedItem[];
+};
+
+export type ExtractedItem = {
+  id: string;
+  captureEventId: string;
+  type: ExtractedItemType;
+  title: string;
+  summary: string;
+  status: ExtractedItemStatus;
+  assignedToId?: string;
+  dueAt?: string;
+  priority?: TaskPriority;
+  category?: TaskCategory;
+  structuredData: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type CareSignal = {
@@ -124,6 +188,7 @@ export type ExtractionResult = {
     title: string;
     category: TaskCategory;
     suggested_assignee: string;
+    suggested_assignees?: RoutingCandidate[];
     due_date: string;
     priority: TaskPriority;
   }>;

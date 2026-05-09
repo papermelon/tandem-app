@@ -41,6 +41,17 @@ OPENAI_MODEL=gpt-5.5
 OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
 ```
 
+Telegram forwarding capture:
+
+```bash
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+TELEGRAM_ALLOWED_USER_IDS=
+```
+
+For Vercel, set `NEXT_PUBLIC_APP_URL` to the production URL. `TELEGRAM_ALLOWED_USER_IDS` is optional; when set, use comma-separated Telegram numeric user IDs to keep the bot private.
+
 Never expose `SUPABASE_SERVICE_ROLE_KEY` in client code. Tandem only uses it inside server routes.
 
 ## Supabase
@@ -60,6 +71,9 @@ The migration creates:
 - `timeline_items`
 - `tasks`
 - `documents`
+- `capture_events`
+- `extracted_items`
+- `telegram_users`
 - `care_signals`
 - `handovers`
 - private Storage bucket: `documents`
@@ -76,6 +90,19 @@ When `OPENAI_API_KEY` is absent, AI routes return realistic mock outputs:
 - `/api/ai/voice`
 
 This keeps the demo stable for hackathon judging.
+
+## Telegram Bot Setup
+
+1. Create a bot with Telegram `@BotFather`.
+2. Add `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, and `NEXT_PUBLIC_APP_URL` to Vercel.
+3. Deploy the app.
+4. Register the webhook:
+
+```bash
+curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<NEXT_PUBLIC_APP_URL>/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+Forward an image, screenshot, PDF, or text message to the private bot. Tandem stores the source in Supabase, extracts care details with OpenAI, and sends back a Save All / Ignore preview. Pending items are visible in `/inbox`.
 
 ## Demo Script
 
@@ -98,7 +125,9 @@ Tandem supports family caregiving coordination and does not provide medical advi
 ```text
 app/
   api/ai/*        OpenAI routes with mock fallback
+  api/telegram    Telegram webhook capture
   api/demo-data   Supabase-backed data loader with local fallback
+  inbox/          Forwarded item review queue
   dashboard/      Family Care Hub
   timeline/       WhatsApp-like structured feed
   tasks/          Task board/list

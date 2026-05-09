@@ -5,6 +5,9 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTs,
   {
+    ignores: ["tandem/**"]
+  },
+  {
     rules: {
       "react-hooks/set-state-in-effect": "off"
     }
