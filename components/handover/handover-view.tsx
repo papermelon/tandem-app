@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Check, Loader2, Plane, Sparkles, UserRoundCheck } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
@@ -149,6 +150,32 @@ export function HandoverView() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              Caregiver Wrapped
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Celebrate each family member&apos;s contribution to {data.recipient.name}&apos;s care.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {data.members.map((member) => (
+                <Button key={member.id} asChild variant="outline">
+                  <Link href={`/wrapped/${member.id}`}>
+                    <Sparkles className="size-4" />
+                    {member.name}&apos;s Wrapped
+                  </Link>
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </section>
