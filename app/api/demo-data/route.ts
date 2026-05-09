@@ -55,7 +55,9 @@ export async function GET() {
         role: user.role,
         avatar: user.avatar,
         phone: user.phone,
-        isDefaultCaregiver: user.is_default_caregiver
+        isDefaultCaregiver: user.is_default_caregiver,
+        categoryPreferences: user.category_preferences ?? [],
+        loadCapacityPct: user.load_capacity_pct ?? 100
       })),
       recipient: recipientsResult.data
         ? {

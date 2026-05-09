@@ -27,6 +27,28 @@ export type FamilyMember = {
   avatar: string;
   phone?: string;
   isDefaultCaregiver?: boolean;
+  categoryPreferences?: TaskCategory[];
+  loadCapacityPct?: number;
+};
+
+export type RoutingCandidate = {
+  memberId: string;
+  score: number;
+  loadPct: number;
+  reasons: string[];
+  components: {
+    categoryAffinity: number;
+    inverseLoad: number;
+    explicitPref: number;
+    proximity: number;
+    defaultBias: number;
+  };
+};
+
+export type RoutingContext = {
+  members: FamilyMember[];
+  tasks: Task[];
+  now?: Date;
 };
 
 export type CareRecipient = {
@@ -188,6 +210,7 @@ export type ExtractionResult = {
     title: string;
     category: TaskCategory;
     suggested_assignee: string;
+    suggested_assignees?: RoutingCandidate[];
     due_date: string;
     priority: TaskPriority;
   }>;
