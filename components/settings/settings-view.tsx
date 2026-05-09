@@ -1,28 +1,116 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, KeyRound, RefreshCw, Settings, Shield, Sparkles } from "lucide-react";
+import { Database, FileText, Globe, KeyRound, Plane, RefreshCw, Settings, Shield, Sparkles, User } from "lucide-react";
 
 import { MemberAvatar } from "@/components/shared/member-avatar";
-import { PageHeading } from "@/components/shared/page-heading";
+import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { useHomeState } from "@/lib/home-state";
+import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
+
+const HOME_STORAGE_KEY = "tandem-home-state-v1";
 
 export function SettingsView() {
   const { members, recipient, documents, mockMode, resetDemo } = useCareData();
+  const home = useHomeState();
+  const [editingName, setEditingName] = React.useState(false);
+  const [draftName, setDraftName] = React.useState(home.state.caregiver.name);
+
+  React.useEffect(() => {
+    setDraftName(home.state.caregiver.name);
+  }, [home.state.caregiver.name]);
+
+  const language = (home.state.caregiver.language ?? "en") as LanguageCode;
+
+  const handleResetHome = () => {
+    if (typeof window === "undefined") return;
+    if (!window.confirm("Clear caregiver name, patients, and selection? This cannot be undone.")) return;
+    window.localStorage.removeItem(HOME_STORAGE_KEY);
+    window.location.reload();
+  };
+
+  const handleResetEverything = () => {
+    if (typeof window === "undefined") return;
+    if (!window.confirm("Reset all demo data including tasks, timeline, and home state?")) return;
+    window.localStorage.removeItem(HOME_STORAGE_KEY);
+    resetDemo();
+  };
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <PageHeading
-        eyebrow="Settings"
-        title="Demo family circle"
-        description="Supabase Auth is ready to connect; without keys, Tandem keeps using local seeded data."
-        icon={Settings}
-      />
+    <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
+      <MobilePageHeader title="Settings" icon={Settings} />
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="size-5 text-primary" />
+              Caregiver
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-2xl border bg-white/70 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Name
+              </div>
+              {editingName ? (
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    aria-label="Caregiver name"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      home.setCaregiverName(draftName.trim());
+                      setEditingName(false);
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="font-semibold">{home.state.caregiver.name || "Not set"}</div>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingName(true)}>
+                    Edit
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border bg-white/70 p-3">
+              <label className="block">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Globe className="size-3.5" />
+                  Language
+                </span>
+                <select
+                  className="mt-2 block w-full rounded-xl border bg-white px-3 py-2 text-sm"
+                  value={language}
+                  onChange={(e) => home.setCaregiverLanguage(e.target.value as LanguageCode)}
+                >
+                  {SEA_LION_LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.label} · {l.native}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="mt-2 text-xs text-muted-foreground">
+                SEA-LION-aligned language list. UI translation is wired in a follow-up.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -44,9 +132,19 @@ export function SettingsView() {
                 <Badge variant={mockMode ? "warning" : "success"}>{mockMode ? "Mock" : "Live"}</Badge>
               </div>
             </div>
-            <Button onClick={resetDemo} variant="outline" className="w-full">
+            <Button onClick={handleResetHome} variant="outline" className="w-full">
               <RefreshCw />
-              Reset seeded demo
+              Reset home state only
+            </Button>
+            <Button onClick={handleResetEverything} variant="outline" className="w-full">
+              <RefreshCw />
+              Reset all demo data
+            </Button>
+            <Button asChild variant="ghost" className="w-full">
+              <Link href="/handover">
+                <Plane className="size-4" />
+                Handover / share circle
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -68,7 +166,7 @@ export function SettingsView() {
         </Card>
       </section>
 
-      <section className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="mt-4 space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Family members</CardTitle>

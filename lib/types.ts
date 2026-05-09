@@ -36,6 +36,28 @@ export type CareRecipient = {
   context: string;
   address: string;
   careCircleId: string;
+  relationship?: string;
+  country?: string;
+  avatar?: string;
+};
+
+export type CaregiverProfile = {
+  id: string;
+  name: string;
+  avatar?: string;
+  language?: string;
+  circleId: string;
+};
+
+export type HandoverQRPayload = {
+  v: 1;
+  careRecipientId: string;
+  careRecipientName: string;
+  circleId: string;
+  fromCircleLabel?: string;
+  issuedAt: number;
+  ciphertext?: string;
+  iv?: string;
 };
 
 export type Task = {
