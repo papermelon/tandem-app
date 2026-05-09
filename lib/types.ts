@@ -76,6 +76,48 @@ export type DocumentRecord = {
   careItems: string[];
 };
 
+export type CaptureStatus = "processing" | "pending_review" | "saved" | "ignored" | "failed";
+export type CaptureSourceType = "text" | "image" | "document" | "voice";
+export type ExtractedItemStatus = "pending" | "approved" | "deleted";
+export type ExtractedItemType = "appointment" | "task" | "medication" | "note" | "document" | "concern";
+
+export type CaptureEvent = {
+  id: string;
+  platform: "telegram" | "web";
+  sourceType: CaptureSourceType;
+  senderName?: string;
+  platformSenderId?: string;
+  platformMessageId?: string;
+  originalFilePath?: string;
+  originalFileUrl?: string;
+  originalFileName?: string;
+  originalFileMimeType?: string;
+  rawText?: string;
+  extractedText?: string;
+  aiSummary?: string;
+  status: CaptureStatus;
+  extractionJson?: ExtractionResult;
+  createdAt: string;
+  updatedAt: string;
+  items: ExtractedItem[];
+};
+
+export type ExtractedItem = {
+  id: string;
+  captureEventId: string;
+  type: ExtractedItemType;
+  title: string;
+  summary: string;
+  status: ExtractedItemStatus;
+  assignedToId?: string;
+  dueAt?: string;
+  priority?: TaskPriority;
+  category?: TaskCategory;
+  structuredData: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type CareSignal = {
   id: string;
   label: string;

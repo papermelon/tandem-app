@@ -2,21 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ClipboardList, Home, LineChart, MessageCircle, Mic, MoreHorizontal, Sparkles, Upload } from "lucide-react";
+import { Bell, ClipboardList, Home, Inbox, LineChart, MessageCircle, Mic, MoreHorizontal, Sparkles, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const primaryNav = [
   { href: "/dashboard", label: "Hub", icon: Home },
-  { href: "/timeline", label: "Timeline", icon: MessageCircle },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/tasks", label: "Tasks", icon: ClipboardList },
-  { href: "/capture", label: "Capture", icon: Upload },
+  { href: "/handover", label: "Handover", icon: Sparkles },
   { href: "/settings", label: "More", icon: MoreHorizontal }
 ];
 
 const secondaryNav = [
-  { href: "/handover", label: "Handover", icon: Sparkles },
+  { href: "/timeline", label: "Timeline", icon: MessageCircle },
+  { href: "/capture", label: "Manual upload", icon: Upload },
   { href: "/meeting", label: "Meeting", icon: Mic },
   { href: "/load", label: "Care load", icon: LineChart }
 ];

@@ -82,6 +82,54 @@ create table if not exists public.documents (
   extraction_json jsonb not null default '{}'::jsonb
 );
 
+create table if not exists public.telegram_users (
+  id uuid primary key default gen_random_uuid(),
+  telegram_user_id text not null unique,
+  user_id text references public.users(id) on delete set null,
+  display_name text,
+  username text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.capture_events (
+  id text primary key,
+  care_circle_id text not null references public.care_circles(id) on delete cascade,
+  platform text not null check (platform in ('telegram', 'web')),
+  source_type text not null check (source_type in ('text', 'image', 'document', 'voice')),
+  status text not null check (status in ('processing', 'pending_review', 'saved', 'ignored', 'failed')),
+  platform_message_id text,
+  platform_sender_id text,
+  sender_name text,
+  original_file_path text,
+  original_file_name text,
+  original_file_mime_type text,
+  raw_text text,
+  extracted_text text,
+  ai_summary text,
+  extraction_json jsonb not null default '{}'::jsonb,
+  preview_message_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.extracted_items (
+  id text primary key,
+  capture_event_id text not null references public.capture_events(id) on delete cascade,
+  care_circle_id text not null references public.care_circles(id) on delete cascade,
+  item_type text not null check (item_type in ('appointment', 'task', 'medication', 'note', 'document', 'concern')),
+  title text not null,
+  summary text not null,
+  status text not null check (status in ('pending', 'approved', 'deleted')) default 'pending',
+  assigned_to_id text references public.users(id) on delete set null,
+  due_at timestamptz,
+  priority text check (priority in ('low', 'medium', 'high')),
+  category text check (category in ('appointment', 'transport', 'medication', 'admin', 'finance', 'check-in', 'home safety')),
+  structured_data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.care_signals (
   id text primary key,
   care_circle_id text not null references public.care_circles(id) on delete cascade,
@@ -109,6 +157,8 @@ create table if not exists public.handovers (
 create index if not exists tasks_care_circle_due_idx on public.tasks (care_circle_id, due_date);
 create index if not exists timeline_care_circle_time_idx on public.timeline_items (care_circle_id, timestamp desc);
 create index if not exists care_signals_care_circle_time_idx on public.care_signals (care_circle_id, timestamp desc);
+create index if not exists capture_events_care_circle_status_idx on public.capture_events (care_circle_id, status, created_at desc);
+create index if not exists extracted_items_capture_status_idx on public.extracted_items (capture_event_id, status);
 
 alter table public.users enable row level security;
 alter table public.care_circles enable row level security;
@@ -117,6 +167,9 @@ alter table public.circle_members enable row level security;
 alter table public.timeline_items enable row level security;
 alter table public.tasks enable row level security;
 alter table public.documents enable row level security;
+alter table public.telegram_users enable row level security;
+alter table public.capture_events enable row level security;
+alter table public.extracted_items enable row level security;
 alter table public.care_signals enable row level security;
 alter table public.handovers enable row level security;
 
@@ -127,12 +180,17 @@ create policy "Authenticated users can read circle members" on public.circle_mem
 create policy "Authenticated users can read timeline items" on public.timeline_items for select to authenticated using (true);
 create policy "Authenticated users can read tasks" on public.tasks for select to authenticated using (true);
 create policy "Authenticated users can read documents" on public.documents for select to authenticated using (true);
+create policy "Authenticated users can read telegram users" on public.telegram_users for select to authenticated using (true);
+create policy "Authenticated users can read capture events" on public.capture_events for select to authenticated using (true);
+create policy "Authenticated users can read extracted items" on public.extracted_items for select to authenticated using (true);
 create policy "Authenticated users can read care signals" on public.care_signals for select to authenticated using (true);
 create policy "Authenticated users can read handovers" on public.handovers for select to authenticated using (true);
 
 create policy "Authenticated users can write timeline items" on public.timeline_items for all to authenticated using (true) with check (true);
 create policy "Authenticated users can write tasks" on public.tasks for all to authenticated using (true) with check (true);
 create policy "Authenticated users can write documents" on public.documents for all to authenticated using (true) with check (true);
+create policy "Authenticated users can write capture events" on public.capture_events for all to authenticated using (true) with check (true);
+create policy "Authenticated users can write extracted items" on public.extracted_items for all to authenticated using (true) with check (true);
 create policy "Authenticated users can write handovers" on public.handovers for all to authenticated using (true) with check (true);
 
 insert into storage.buckets (id, name, public)
