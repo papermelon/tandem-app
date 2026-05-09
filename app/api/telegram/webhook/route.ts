@@ -7,6 +7,7 @@ import {
   ignoreCapture,
   senderNameFromTelegramUser
 } from "@/lib/captures";
+import { getErrorMessage } from "@/lib/error-message";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import {
   answerCallbackQuery,
@@ -250,8 +251,8 @@ export async function POST(request: Request) {
       await sendTelegramMessage({
         chatId,
         text: "I could not process that item yet. Please check Tandem configuration and try again."
-      }).catch(() => undefined);
+    }).catch(() => undefined);
     }
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Telegram webhook failed." });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error, "Telegram webhook failed.") });
   }
 }

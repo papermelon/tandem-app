@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { listCaptureEvents } from "@/lib/captures";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const runtime = "nodejs";
 
@@ -13,9 +14,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ captures });
   } catch (error) {
     console.error("Failed to load capture events", error);
-    return NextResponse.json(
-      { captures: [], error: error instanceof Error ? error.message : "Could not load captures." },
-      { status: 500 }
-    );
+    return NextResponse.json({ captures: [], error: getErrorMessage(error, "Could not load captures.") }, { status: 500 });
   }
 }
