@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbfaf6;
+  --foreground: #25211c;
+  --card: #ffffff;
+  --card-foreground: #25211c;
+  --muted: #f0eee8;
+  --muted-foreground: #756f66;
+  --border: #e4ded3;
+  --input: #e4ded3;
+  --ring: #2f7d78;
+  --primary: #2f7d78;
+  --primary-foreground: #ffffff;
+  --secondary: #f2a36b;
+  --secondary-foreground: #2e2117;
+  --accent: #7b9f72;
+  --accent-foreground: #ffffff;
+  --destructive: #b4504a;
+  --destructive-foreground: #ffffff;
+  --radius: 1rem;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(242, 163, 107, 0.22), transparent 28rem),
+    linear-gradient(135deg, #fbfaf6 0%, #f6f0e7 48%, #eef5f2 100%);
+  color: var(--foreground);
+  min-height: 100vh;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 5.75rem);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --radius-sm: calc(var(--radius) - 0.5rem);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.5rem);
+}
