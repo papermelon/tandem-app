@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { createSeedData } from "@/lib/seed-data";
-import type { AppData, DocumentRecord, Handover, Task, TimelineItem } from "@/lib/types";
+import type { AppData, DocumentRecord, FamilyMember, Handover, Task, TaskCategory, TimelineItem } from "@/lib/types";
 
 type CareDataContextValue = AppData & {
   mockMode: boolean;
@@ -15,6 +15,10 @@ type CareDataContextValue = AppData & {
   resetDemo: () => void;
   memberName: (id?: string) => string;
   memberIdByName: (name?: string) => string | undefined;
+  updateMemberPreferences: (
+    memberId: string,
+    patch: { categoryPreferences?: TaskCategory[]; loadCapacityPct?: number }
+  ) => void;
 };
 
 const STORAGE_KEY = "tandem-demo-state-v1";
@@ -186,6 +190,26 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     [mockMode]
   );
 
+  const updateMemberPreferences = React.useCallback(
+    (memberId: string, patch: { categoryPreferences?: TaskCategory[]; loadCapacityPct?: number }) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.map((member: FamilyMember) =>
+                member.id === memberId ? { ...member, ...patch } : member
+              )
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/members/${memberId}/preferences`, patch, "PATCH");
+      }
+    },
+    [mockMode]
+  );
+
   const resetDemo = React.useCallback(() => {
     const seed = createSeedData();
     window.localStorage.removeItem(STORAGE_KEY);
@@ -204,9 +228,10 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       addHandover,
       resetDemo,
       memberName,
-      memberIdByName
+      memberIdByName,
+      updateMemberPreferences
     }),
-    [addDocument, addHandover, addTasks, addTimelineItem, data, memberIdByName, memberName, mockMode, resetDemo, updateTask]
+    [addDocument, addHandover, addTasks, addTimelineItem, data, memberIdByName, memberName, mockMode, resetDemo, updateMemberPreferences, updateTask]
   );
 
   if (!data) {

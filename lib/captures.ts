@@ -1,4 +1,5 @@
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { applyRoutingForCapture, recordReassignment } from "@/lib/routing-server";
 import { asTaskCategory, asTaskPriority, normalizeDueDate } from "@/lib/task-utils";
 import type { CaptureEvent, CaptureSourceType, ExtractedItem, ExtractionResult } from "@/lib/types";
 
@@ -198,6 +199,12 @@ export async function createCaptureFromExtraction(input: {
   const itemResult = await supabase.from("extracted_items").insert(itemRowsFromExtraction(captureId, input.result));
   if (itemResult.error) throw itemResult.error;
 
+  try {
+    await applyRoutingForCapture(supabase, captureId);
+  } catch {
+    // Routing is best-effort — items remain pending without suggestions.
+  }
+
   return captureId;
 }
 
@@ -387,6 +394,14 @@ export async function updateExtractedItem(
     .eq("id", itemId);
 
   if (error) throw error;
+
+  if (patch.assignedToId !== undefined) {
+    try {
+      await recordReassignment(supabase, itemId, patch.assignedToId);
+    } catch {
+      // Telemetry is best-effort.
+    }
+  }
 }
 
 export { senderNameFromTelegramUser };

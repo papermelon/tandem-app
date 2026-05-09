@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Check, ExternalLink, FileText, ImageIcon, Inbox, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ExternalLink, FileText, ImageIcon, Inbox, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCareData } from "@/components/providers/care-data-provider";
 import { categoryLabels } from "@/lib/labels";
-import type { CaptureEvent, ExtractedItem, TaskCategory, TaskPriority } from "@/lib/types";
+import { rankAssignees } from "@/lib/routing";
+import type { CaptureEvent, ExtractedItem, FamilyMember, RoutingCandidate, Task, TaskCategory, TaskPriority } from "@/lib/types";
 
 type CapturesPayload = {
   captures: CaptureEvent[];
@@ -24,7 +25,7 @@ const categories: TaskCategory[] = ["appointment", "transport", "medication", "a
 const priorities: TaskPriority[] = ["low", "medium", "high"];
 
 export function InboxView() {
-  const { members } = useCareData();
+  const { members, tasks } = useCareData();
   const [captures, setCaptures] = React.useState<CaptureEvent[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -134,6 +135,7 @@ export function InboxView() {
               key={capture.id}
               capture={capture}
               members={members}
+              tasks={tasks}
               busy={busyId === capture.id}
               onApprove={() => void approveCapture(capture.id)}
               onIgnore={() => void ignoreCapture(capture.id)}
@@ -149,13 +151,15 @@ export function InboxView() {
 function CaptureCard({
   capture,
   members,
+  tasks,
   busy,
   onApprove,
   onIgnore,
   onUpdateItem
 }: {
   capture: CaptureEvent;
-  members: { id: string; name: string }[];
+  members: FamilyMember[];
+  tasks: Task[];
   busy: boolean;
   onApprove: () => void;
   onIgnore: () => void;
@@ -200,7 +204,7 @@ function CaptureCard({
 
           <div className="space-y-3">
             {pendingItems.map((item) => (
-              <EditableExtractedItem key={item.id} item={item} members={members} onUpdate={onUpdateItem} />
+              <EditableExtractedItem key={item.id} item={item} members={members} tasks={tasks} onUpdate={onUpdateItem} />
             ))}
           </div>
         </div>
@@ -259,14 +263,25 @@ function SourcePreview({ capture }: { capture: CaptureEvent }) {
 function EditableExtractedItem({
   item,
   members,
+  tasks,
   onUpdate
 }: {
   item: ExtractedItem;
-  members: { id: string; name: string }[];
+  members: FamilyMember[];
+  tasks: Task[];
   onUpdate: (item: ExtractedItem) => void;
 }) {
   const [draft, setDraft] = React.useState(item);
   const [saving, setSaving] = React.useState(false);
+
+  const candidates = React.useMemo(
+    () =>
+      rankAssignees(
+        { category: draft.category, dueAt: draft.dueAt, priority: draft.priority },
+        { members, tasks }
+      ),
+    [draft.category, draft.dueAt, draft.priority, members, tasks]
+  );
 
   async function savePatch(nextDraft = draft) {
     setSaving(true);
@@ -311,7 +326,18 @@ function EditableExtractedItem({
         </Button>
       </div>
 
-      <div className="grid gap-3">
+      <SmartAssignPanel
+        candidates={candidates}
+        members={members}
+        currentAssigneeId={draft.assignedToId}
+        onPick={(memberId) => {
+          const next = { ...draft, assignedToId: memberId };
+          setDraft(next);
+          void savePatch(next);
+        }}
+      />
+
+      <div className="mt-3 grid gap-3">
         <Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} aria-label="Item title" />
         <Textarea value={draft.summary} onChange={(event) => setDraft({ ...draft, summary: event.target.value })} aria-label="Item summary" />
 
@@ -375,6 +401,126 @@ function EditableExtractedItem({
           Save edits
         </Button>
       </div>
+    </div>
+  );
+}
+
+function SmartAssignPanel({
+  candidates,
+  members,
+  currentAssigneeId,
+  onPick
+}: {
+  candidates: RoutingCandidate[];
+  members: FamilyMember[];
+  currentAssigneeId?: string;
+  onPick: (memberId: string) => void;
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+
+  if (candidates.length === 0) {
+    return (
+      <div className="mb-3 flex items-center gap-2 rounded-xl border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <Sparkles className="size-3.5" />
+        No confident match — leave unclaimed and pick manually below.
+      </div>
+    );
+  }
+
+  const memberById = new Map(members.map((m) => [m.id, m]));
+  const top = candidates[0]!;
+  const topMember = memberById.get(top.memberId);
+  const rest = candidates.slice(1);
+  const isAlreadyAssigned = currentAssigneeId === top.memberId;
+
+  return (
+    <div className="mb-3 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-primary">
+        <Sparkles className="size-3.5" />
+        Smart suggestion
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <MemberAvatar member={topMember} />
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold">{topMember?.name ?? "Unknown"}</div>
+          <LoadBar pct={top.loadPct} />
+        </div>
+        <Button size="sm" onClick={() => onPick(top.memberId)} disabled={isAlreadyAssigned}>
+          <Check />
+          {isAlreadyAssigned ? "Assigned" : "Approve & assign"}
+        </Button>
+      </div>
+
+      {top.reasons.length > 0 ? (
+        <ul className="mt-2 space-y-0.5 text-xs leading-5 text-muted-foreground">
+          {top.reasons.map((reason) => (
+            <li key={reason} className="before:mr-1.5 before:content-['•']">{reason}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {rest.length > 0 ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary"
+          >
+            {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            {expanded ? "Hide other options" : `Pick someone else (${rest.length})`}
+          </button>
+
+          {expanded ? (
+            <div className="mt-2 space-y-2 border-t border-primary/10 pt-2">
+              {rest.map((candidate) => {
+                const member = memberById.get(candidate.memberId);
+                return (
+                  <div key={candidate.memberId} className="flex items-center gap-3">
+                    <MemberAvatar member={member} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold">{member?.name ?? "Unknown"}</div>
+                      <LoadBar pct={candidate.loadPct} />
+                      {candidate.reasons[0] ? (
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground">{candidate.reasons[0]}</div>
+                      ) : null}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onPick(candidate.memberId)}
+                      disabled={currentAssigneeId === candidate.memberId}
+                    >
+                      Assign
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function MemberAvatar({ member }: { member?: FamilyMember }) {
+  return (
+    <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary">
+      {member?.avatar ?? "?"}
+    </div>
+  );
+}
+
+function LoadBar({ pct }: { pct: number }) {
+  const clamped = Math.min(100, Math.max(0, pct));
+  const tone = clamped >= 80 ? "bg-destructive" : clamped >= 50 ? "bg-amber-500" : "bg-emerald-500";
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full ${tone}`} style={{ width: `${clamped}%` }} />
+      </div>
+      <span className="text-xs text-muted-foreground">{clamped}% load</span>
     </div>
   );
 }
