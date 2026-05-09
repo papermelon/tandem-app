@@ -244,6 +244,7 @@ export async function POST(request: Request) {
     if (update.message) return await handleMessage(update.message);
     return jsonOk();
   } catch (error) {
+    console.error("Telegram webhook failed", error);
     const chatId = update.message?.chat.id || update.callback_query?.message?.chat.id;
     if (chatId) {
       await sendTelegramMessage({

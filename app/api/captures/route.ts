@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     const captures = await listCaptureEvents(status);
     return NextResponse.json({ captures });
   } catch (error) {
+    console.error("Failed to load capture events", error);
     return NextResponse.json(
       { captures: [], error: error instanceof Error ? error.message : "Could not load captures." },
       { status: 500 }

@@ -207,15 +207,31 @@ export async function listCaptureEvents(status = "pending_review"): Promise<Capt
 
   const { data, error } = await supabase
     .from("capture_events")
-    .select("*, extracted_items(*)")
+    .select("*")
     .eq("care_circle_id", CARE_CIRCLE_ID)
     .eq("status", status)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
+  const captureRows = (data ?? []) as CaptureRow[];
+  const captureIds = captureRows.map((row) => row.id);
+  let itemsByCaptureId = new Map<string, ExtractedItemRow[]>();
+
+  if (captureIds.length > 0) {
+    const itemsResult = await supabase.from("extracted_items").select("*").in("capture_event_id", captureIds);
+    if (itemsResult.error) throw itemsResult.error;
+
+    itemsByCaptureId = ((itemsResult.data ?? []) as ExtractedItemRow[]).reduce((items, row) => {
+      const rows = items.get(row.capture_event_id) ?? [];
+      rows.push(row);
+      items.set(row.capture_event_id, rows);
+      return items;
+    }, new Map<string, ExtractedItemRow[]>());
+  }
+
   return Promise.all(
-    ((data ?? []) as CaptureRow[]).map(async (row) => ({
+    captureRows.map(async (row) => ({
       id: row.id,
       platform: row.platform,
       sourceType: row.source_type,
@@ -233,7 +249,7 @@ export async function listCaptureEvents(status = "pending_review"): Promise<Capt
       extractionJson: row.extraction_json ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      items: (row.extracted_items ?? []).map(mapExtractedItem)
+      items: (itemsByCaptureId.get(row.id) ?? []).map(mapExtractedItem)
     }))
   );
 }
