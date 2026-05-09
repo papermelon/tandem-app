@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AudioLines, Check, FilePlus2, Loader2, Mic, Paperclip, Sparkles, UploadCloud } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { AudioLines, Check, FilePlus2, HeartPulse, Loader2, Mic, Paperclip, Sparkles, UploadCloud } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,8 @@ type Mode = "image" | "voice";
 
 export function CaptureView() {
   const [mode, setMode] = React.useState<Mode>("image");
+  const params = useSearchParams();
+  const patientName = params?.get("patientName") ?? null;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -26,6 +29,16 @@ export function CaptureView() {
         description="Upload a memo, letter, appointment slip, or bill. AI drafts the record and tasks; the family reviews before saving."
         icon={Sparkles}
       />
+
+      {patientName ? (
+        <div className="mb-4 flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+          <HeartPulse className="size-4 text-primary" />
+          <span>
+            New instruction for{" "}
+            <span className="font-bold text-foreground">{patientName}</span>.
+          </span>
+        </div>
+      ) : null}
 
       <div className="mb-4 grid grid-cols-2 rounded-2xl border bg-white/80 p-1">
         <button

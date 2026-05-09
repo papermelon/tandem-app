@@ -3,12 +3,13 @@
 import * as React from "react";
 import { Check, Loader2, Plane, Sparkles, UserRoundCheck } from "lucide-react";
 
-import { PageHeading } from "@/components/shared/page-heading";
+import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCareData } from "@/components/providers/care-data-provider";
 import type { Handover } from "@/lib/types";
+import { HandoverShareCard } from "./handover-share-card";
 
 type HandoverResult = {
   current_situation: string;
@@ -83,15 +84,10 @@ export function HandoverView() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeading
-        eyebrow="Handover Summary"
-        title="Make care transferable"
-        description="Generate a practical handover for the next person covering Mum. AI drafts are review-only until saved."
-        icon={Sparkles}
-      />
+    <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
+      <MobilePageHeader title="Handover" icon={Plane} />
 
-      <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+      <section className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle>Handover options</CardTitle>
@@ -151,6 +147,10 @@ export function HandoverView() {
             )}
           </CardContent>
         </Card>
+      </section>
+
+      <section className="mt-4">
+        <HandoverShareCard />
       </section>
     </div>
   );

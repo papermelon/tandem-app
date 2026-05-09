@@ -25,7 +25,13 @@ const secondaryNav = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname?.startsWith("/wrapped")) {
+  if (
+    pathname?.startsWith("/wrapped") ||
+    pathname === "/" ||
+    pathname?.startsWith("/home") ||
+    pathname?.startsWith("/handover") ||
+    pathname?.startsWith("/settings")
+  ) {
     return <>{children}</>;
   }
 
@@ -64,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <main className="safe-bottom w-full px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+        <main className="safe-bottom w-full px-4 py-4 pb-24 sm:px-6 lg:px-8 lg:py-8">
           <header className="mb-4 flex items-center justify-between lg:hidden">
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="grid size-10 place-items-center rounded-2xl bg-primary font-bold text-primary-foreground">T</div>

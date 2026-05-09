@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import "@/app/globals.css";
 import { AppShell } from "@/components/app-shell";
+import { HomeNavbar } from "@/components/dashboard/home/home-navbar";
 import { CareDataProvider } from "@/components/providers/care-data-provider";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <CareDataProvider>
           <AppShell>{children}</AppShell>
+          <HomeNavbar />
         </CareDataProvider>
       </body>
     </html>

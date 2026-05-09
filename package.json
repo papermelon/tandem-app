@@ -17,6 +17,7 @@
     "lucide-react": "latest",
     "next": "latest",
     "openai": "latest",
+    "qrcode.react": "^4.2.0",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest",
