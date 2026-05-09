@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Database, FileText, KeyRound, RefreshCw, Settings, Shield } from "lucide-react";
+import { Database, FileText, KeyRound, RefreshCw, Settings, Shield, Sparkles } from "lucide-react";
 
 import { MemberAvatar } from "@/components/shared/member-avatar";
 import { PageHeading } from "@/components/shared/page-heading";
@@ -75,7 +75,7 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border bg-white/70 p-3">
+              <div key={member.id} className="flex flex-col gap-3 rounded-2xl border bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <MemberAvatar avatar={member.avatar} name={member.name} />
                   <div>
@@ -83,7 +83,15 @@ export function SettingsView() {
                     <div className="text-xs text-muted-foreground">{member.role}</div>
                   </div>
                 </div>
-                {member.isDefaultCaregiver ? <Badge variant="secondary">Default</Badge> : <Badge variant="outline">Can help</Badge>}
+                <div className="flex items-center gap-2">
+                  {member.isDefaultCaregiver ? <Badge variant="secondary">Default</Badge> : <Badge variant="outline">Can help</Badge>}
+                  <Button asChild variant="soft" size="sm">
+                    <Link href={`/wrapped/${member.id}`} aria-label={`View ${member.name}'s Caregiver Wrapped`}>
+                      <Sparkles className="size-3.5" />
+                      Wrapped
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>

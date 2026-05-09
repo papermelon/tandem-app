@@ -25,6 +25,10 @@ const secondaryNav = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
+  if (pathname?.startsWith("/wrapped")) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl">
