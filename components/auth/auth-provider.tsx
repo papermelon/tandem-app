@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { HeartPulse, LogOut, Mail } from "lucide-react";
 
@@ -159,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithEmail = React.useCallback(
     async ({ email, name }: { email: string; name: string }) => {
-      if (!supabase) return "Supabase keys are not configured. Use a demo path for now.";
+      if (!supabase) return "Email sign-in is not available in this demo. Try Rachel's demo instead.";
       const origin = window.location.origin;
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -229,11 +230,16 @@ function AuthLoading() {
   return (
     <div className="grid min-h-screen place-items-center bg-background px-6 text-center">
       <div>
-        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-          T
-        </div>
-        <div className="mt-4 text-lg font-bold">Loading Tandem</div>
-        <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing your care circle.</p>
+        <Image
+          src="/tandem-mark.png"
+          alt="Tandem logo"
+          width={48}
+          height={48}
+          className="mx-auto size-12 rounded-2xl object-contain"
+          priority
+        />
+        <div className="mt-4 text-lg font-bold">Opening Tandem</div>
+        <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Getting your family care space ready.</p>
       </div>
     </div>
   );
@@ -258,29 +264,34 @@ function AuthWelcome() {
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-between">
         <section className="pt-8">
           <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-              T
-            </div>
+            <Image
+              src="/tandem-mark.png"
+              alt="Tandem logo"
+              width={48}
+              height={48}
+              className="size-12 rounded-2xl object-contain"
+              priority
+            />
             <div>
               <div className="text-2xl font-bold">Tandem</div>
-              <div className="text-sm text-muted-foreground">Family care hub</div>
+              <div className="text-sm text-muted-foreground">Care Moves Better in Tandem</div>
             </div>
           </div>
 
           <div className="mt-12">
             <HeartPulse className="size-10 text-primary" />
             <h1 className="mt-4 text-4xl font-bold leading-tight tracking-normal">
-              Coordinate care without losing the family context.
+              Keep the whole family on the same page.
             </h1>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Continue as Rachel to view the demo circle, or sign in to create and manage your own live care circle.
+              Try Rachel&apos;s demo family, or sign in to start a care space for someone you love.
             </p>
           </div>
         </section>
 
         <section className="space-y-3 pb-8">
           <Button className="w-full" size="lg" onClick={auth.continueAsRachel}>
-            Continue as Rachel
+            View Rachel&apos;s demo
           </Button>
 
           <form className="space-y-3 rounded-2xl border bg-white/75 p-4 shadow-sm" onSubmit={handleEmailSignIn}>
@@ -292,7 +303,7 @@ function AuthWelcome() {
                 id="auth-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Caregiver name"
+                placeholder="e.g. Rachel"
               />
             </div>
             <div>
@@ -309,7 +320,7 @@ function AuthWelcome() {
             </div>
             <Button type="submit" variant="outline" className="w-full" disabled={!email.trim() || sending}>
               <Mail className="size-4" />
-              {sending ? "Sending" : auth.isSupabaseConfigured ? "Email me a sign-in link" : "Try Supabase sign-in"}
+              {sending ? "Sending" : auth.isSupabaseConfigured ? "Send sign-in link" : "Try email sign-in"}
             </Button>
             {message ? <p className="text-sm leading-6 text-muted-foreground">{message}</p> : null}
           </form>

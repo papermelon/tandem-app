@@ -48,9 +48,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_WEBHOOK_SECRET=
 TELEGRAM_ALLOWED_USER_IDS=
+TELEGRAM_BOT_USERNAME=
 ```
 
 For Vercel, set `NEXT_PUBLIC_APP_URL` to the production URL. `TELEGRAM_ALLOWED_USER_IDS` is optional; when set, use comma-separated Telegram numeric user IDs to keep the bot private.
+`TELEGRAM_BOT_USERNAME` is optional; Tandem can derive it from `TELEGRAM_BOT_TOKEN`, but setting it avoids an extra Bot API lookup when generating connect links.
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` in client code. Tandem only uses it inside server routes.
 
@@ -122,6 +124,19 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<NEXT_PUBL
 ```
 
 Forward an image, screenshot, PDF, or text message to the private bot. Tandem stores the source in Supabase, extracts care details with OpenAI, and sends back a Save All / Ignore preview. Pending items are visible in `/inbox`.
+
+Telegram must be linked from a signed-in Tandem account before forwarded items are accepted. In Settings, use **Connect Telegram** to generate a short-lived `/start <token>` link for the active care recipient. The webhook validates the token, links the Telegram sender to the Tandem user and care circle, then stores future forwarded items against that care circle.
+
+Recommended bot commands:
+
+```text
+start - Connect Tandem or show link status
+status - Show linked Tandem care space
+recipient - Show active care recipient
+unlink - Disconnect Telegram from Tandem
+```
+
+For production, prefer token-based linking over `TELEGRAM_ALLOWED_USER_IDS`. The allow-list is useful for demos, but every accepted Telegram sender should still resolve through `telegram_users -> users -> circle_members -> care_circles`.
 
 ## Demo Script
 

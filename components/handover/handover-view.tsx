@@ -22,7 +22,7 @@ type HandoverResult = {
   suggested_next_actions: string[];
 };
 
-const options = ["Next 3 days", "Next 7 days", "Custom range", "I'm travelling", "Someone else is covering Ah Muay"];
+const options = ["Next 3 days", "Next 7 days", "Custom range", "I'm away", "Someone else is stepping in"];
 
 export function HandoverView() {
   const data = useCareData();
@@ -90,7 +90,7 @@ export function HandoverView() {
       <section className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Handover options</CardTitle>
+            <CardTitle>What should they know?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {options.map((option) => (
@@ -107,7 +107,7 @@ export function HandoverView() {
             ))}
             <Button onClick={generate} disabled={loading} className="w-full">
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              Generate Handover
+              Prepare handover
             </Button>
           </CardContent>
         </Card>
@@ -115,7 +115,7 @@ export function HandoverView() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
-              <CardTitle>Review handover</CardTitle>
+              <CardTitle>Ready to share</CardTitle>
               {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode}</Badge> : null}
             </div>
           </CardHeader>
@@ -124,13 +124,13 @@ export function HandoverView() {
               <div className="grid min-h-96 place-items-center rounded-3xl bg-muted p-6 text-center">
                 <div>
                   <Sparkles className="mx-auto size-8 text-primary" />
-                  <div className="mt-3 font-bold">Handover appears here</div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Choose a scenario and generate a reviewable summary.</p>
+                  <div className="mt-3 font-bold">Your handover will appear here</div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Choose a time window and Tandem will gather the key context.</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before sharing</Badge>
                 <HandoverSection title="Current situation" items={[result.current_situation]} />
                 <HandoverSection title="Upcoming appointments" items={result.upcoming_appointments} />
                 <HandoverSection title="Active tasks" items={result.active_tasks} />

@@ -40,11 +40,11 @@ export function DashboardView() {
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeading
-        eyebrow="Family Care Hub"
+        eyebrow="Family Care"
         title={`${recipient.name}'s week at a glance`}
-        description={`${recipient.age}, ${recipient.context}. Shared context for Rachel, Ming, and Lina without turning care into a cold dashboard.`}
+        description={`${recipient.age}, ${recipient.context}. Shared context for Rachel, Ming, and Lina, without turning care into admin work.`}
         icon={HeartPulse}
-        badge="Mock mode works without Supabase or OpenAI keys"
+        badge="Demo data"
       />
 
       <section className="grid gap-4 lg:grid-cols-[1.35fr_0.85fr]">
@@ -53,7 +53,7 @@ export function DashboardView() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Badge variant="secondary" className="border-white/20 bg-white/20 text-white">Today</Badge>
-                <CardTitle className="mt-3 text-2xl">Rehab, medication, and one check-in to keep visible.</CardTitle>
+                <CardTitle className="mt-3 text-2xl">Rehab, medication, and one check-in to keep on everyone&apos;s radar.</CardTitle>
               </div>
               <ShieldCheck className="size-8 opacity-90" />
             </div>
@@ -75,7 +75,7 @@ export function DashboardView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="size-5 text-primary" />
-              Care Signals
+              Things to watch
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -131,7 +131,7 @@ export function DashboardView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LineChart className="size-5 text-primary" />
-              Care load snapshot
+              Care load
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -148,7 +148,7 @@ export function DashboardView() {
             </div>
             <ProgressBar value={rachelPercent} className="h-3" />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Rachel has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              Rachel has handled most appointment-related tasks this week. The next transport task may be easier for someone else to take.
             </p>
             <Button asChild variant="soft" className="mt-4 w-full">
               <Link href="/load">Open care load</Link>
@@ -196,13 +196,13 @@ export function DashboardView() {
 
       <section className="mt-4 grid gap-3 sm:grid-cols-3">
         <Button asChild size="lg" variant="secondary">
-          <Link href="/inbox">Review forwarded items</Link>
+          <Link href="/inbox">Review new updates</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
-          <Link href="/handover">Generate handover</Link>
+          <Link href="/handover">Prepare handover</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
-          <Link href="/capture">Manual upload</Link>
+          <Link href="/capture">Add paperwork</Link>
         </Button>
       </section>
     </div>

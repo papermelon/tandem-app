@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { HeartPulse } from "lucide-react";
+import Image from "next/image";
 
 import { Input } from "@/components/ui/input";
 import { useCareData } from "@/components/providers/care-data-provider";
@@ -77,15 +77,19 @@ export function HomeView() {
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
       {onSelector ? (
         <header className="flex flex-col items-center py-4">
-          <div className="flex items-center gap-2 text-xl font-bold">
-            <HeartPulse className="size-5 text-primary" />
-            TANDEM
-          </div>
+          <Image
+            src="/tandem-logo.jpg"
+            alt="Tandem - Care Moves Better in Tandem"
+            width={180}
+            height={101}
+            className="h-auto w-36 object-contain"
+            priority
+          />
           {showNameField ? (
             <div className="mt-3 w-full max-w-xs">
               <Input
                 autoFocus
-                placeholder="Enter caregiver name"
+                placeholder="What should we call you?"
                 value={home.state.caregiver.name}
                 onChange={(e) => home.setCaregiverName(e.target.value)}
                 aria-label="Caregiver name"
@@ -93,7 +97,7 @@ export function HomeView() {
             </div>
           ) : home.state.caregiver.name ? (
             <div className="mt-2 text-sm text-muted-foreground">
-              ← <span className="font-semibold text-foreground">{home.state.caregiver.name}</span> →
+            <span className="font-semibold text-foreground">{home.state.caregiver.name}</span>
             </div>
           ) : null}
         </header>

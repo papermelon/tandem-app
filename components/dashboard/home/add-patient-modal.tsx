@@ -48,7 +48,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
       className="fixed inset-0 z-[120] grid items-end justify-items-center bg-black/50 sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-label="New care recipient"
+      aria-label="Add loved one"
       onClick={onClose}
     >
       <div
@@ -56,7 +56,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold">New care recipient</h2>
+          <h2 className="text-lg font-bold">Add someone you care for</h2>
           <button
             type="button"
             onClick={onClose}
@@ -107,7 +107,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
           </label>
 
           <Button type="submit" className="w-full">
-            Start caring
+            Continue
           </Button>
         </form>
 
@@ -119,7 +119,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
 
         <Button variant="outline" className="w-full gap-2" onClick={onScanQR}>
           <QrCode className="size-4" />
-          Scan from handover
+          Scan a handover QR
         </Button>
       </div>
     </div>

@@ -33,8 +33,8 @@ export function CaptureView() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         eyebrow="Capture"
-        title="Turn care fragments into shared records"
-        description="Upload a memo, letter, appointment slip, or bill. AI drafts the record and tasks; the family reviews before saving."
+        title="Make sense of the paperwork"
+        description="Upload a memo, letter, appointment slip, or bill. Tandem pulls out the dates, tasks, and family updates for review."
         icon={Sparkles}
       />
 
@@ -42,7 +42,7 @@ export function CaptureView() {
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
           <HeartPulse className="size-4 text-primary" />
           <span>
-            New instruction for{" "}
+            New update for{" "}
             <span className="font-bold text-foreground">{patientName}</span>.
           </span>
         </div>
@@ -53,13 +53,13 @@ export function CaptureView() {
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "image" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("image")}
         >
-          Image to record
+          Paperwork
         </button>
         <button
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "voice" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("voice")}
         >
-          Voice to task
+          Voice note
         </button>
       </div>
 
@@ -114,7 +114,7 @@ function ImageCapture() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UploadCloud className="size-5 text-primary" />
-            Upload document
+            Add paperwork
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -127,7 +127,7 @@ function ImageCapture() {
             }}
           >
             <Paperclip className="size-8 text-primary" />
-            <div className="mt-3 font-bold">{file ? file.name : "Drop or choose an image or PDF"}</div>
+            <div className="mt-3 font-bold">{file ? file.name : "Drop or choose a photo or PDF"}</div>
             <div className="mt-1 text-sm leading-6 text-muted-foreground">
               Doctor memo, discharge summary, prescription, HDB EASE letter, AIC grant letter, appointment slip, or bill.
             </div>
@@ -144,10 +144,10 @@ function ImageCapture() {
           <div className="grid gap-2 sm:grid-cols-2">
             <Button onClick={() => extract(false)} disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              Create review item
+              Prepare for review
             </Button>
             <Button variant="outline" onClick={() => extract(true)} disabled={loading}>
-              Use demo memo
+              Use sample memo
             </Button>
           </div>
           {error ? <div className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
@@ -157,7 +157,7 @@ function ImageCapture() {
       <Card className="min-h-[28rem]">
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <CardTitle>Review before saving</CardTitle>
+            <CardTitle>Ready for family review</CardTitle>
             {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode === "openai" ? "OpenAI" : "Mock"}</Badge> : null}
           </div>
         </CardHeader>
@@ -166,16 +166,16 @@ function ImageCapture() {
             <div className="grid min-h-72 place-items-center rounded-3xl bg-muted p-6 text-center">
               <div>
                 <FilePlus2 className="mx-auto size-8 text-primary" />
-                <div className="mt-3 font-bold">AI draft will appear here</div>
+                <div className="mt-3 font-bold">Your review draft will appear here</div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Nothing becomes a task or timeline item until it is approved in the Inbox.
+                  Nothing is added to the family record until someone approves it in the Inbox.
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before saving</Badge>
                 <h2 className="mt-3 text-2xl font-bold">{result.document_type}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.plain_english_summary}</p>
               </div>
@@ -185,7 +185,7 @@ function ImageCapture() {
               <InfoList title="Medication or care items" items={result.medications_or_care_items} />
 
               <div>
-                <div className="mb-2 font-bold">Suggested tasks</div>
+                <div className="mb-2 font-bold">Suggested next steps</div>
                 <div className="space-y-2">
                   {result.recommended_tasks.map((task) => (
                     <div key={task.title} className="rounded-2xl border bg-white/70 p-3">
@@ -204,7 +204,7 @@ function ImageCapture() {
 
               <Button onClick={() => reviewUrl && router.push(reviewUrl)} className="w-full" disabled={!captureId || !reviewUrl}>
                 <Check />
-                Review in Inbox
+                Open in Inbox
               </Button>
             </div>
           )}
@@ -285,7 +285,7 @@ function VoiceCapture() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AudioLines className="size-5 text-primary" />
-            Voice update
+            Voice note
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -297,11 +297,11 @@ function VoiceCapture() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             aria-label="Optional voice context"
-            placeholder="Optional context if the recording needs names, places, or a typed fallback."
+            placeholder="Add names, places, or extra context if the voice note needs it."
           />
           <Button onClick={generate} disabled={loading} className="w-full">
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            Create voice review
+            Prepare voice note
           </Button>
           {error ? <div className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
         </CardContent>
@@ -309,27 +309,27 @@ function VoiceCapture() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Review voice result</CardTitle>
+          <CardTitle>Ready for family review</CardTitle>
         </CardHeader>
         <CardContent>
           {!result ? (
             <div className="grid min-h-72 place-items-center rounded-3xl bg-muted p-6 text-center">
               <div>
                 <Mic className="mx-auto size-8 text-primary" />
-                <div className="mt-3 font-bold">Voice task draft appears here</div>
+                <div className="mt-3 font-bold">Your voice note summary will appear here</div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Transcription and task creation are reviewed in the Inbox before saving.
+                  Transcript and next steps stay in review until the family saves them.
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before saving</Badge>
                 {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode === "openai" ? "OpenAI" : "Mock"}</Badge> : null}
               </div>
               <InfoList title="Transcript" items={[result.transcript]} />
-              <InfoList title="Update note" items={[result.update_note]} />
+              <InfoList title="Family update" items={[result.update_note]} />
               <div className="rounded-2xl border bg-white/70 p-3">
                 <div className="font-bold">{result.suggested_task.title}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -341,7 +341,7 @@ function VoiceCapture() {
               <div className="rounded-2xl bg-primary/5 p-3 text-sm leading-6">{result.family_message}</div>
               <Button onClick={() => reviewUrl && router.push(reviewUrl)} disabled={!captureId || !reviewUrl} className="w-full">
                 <Check />
-                Review in Inbox
+                Open in Inbox
               </Button>
             </div>
           )}

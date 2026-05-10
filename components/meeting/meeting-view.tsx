@@ -71,9 +71,9 @@ export function MeetingView() {
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeading
-        eyebrow="Family Meeting Assistant"
-        title="Turn discussion into neutral next steps"
-        description="Paste notes or a transcript. Tandem drafts decisions, tasks, questions, risks, and reminders for review."
+        eyebrow="Family Meeting"
+        title="Turn the family chat into next steps"
+        description="Paste notes or a transcript. Tandem organizes decisions, tasks, open questions, and reminders for review."
         icon={MessagesSquare}
       />
 
@@ -90,7 +90,7 @@ export function MeetingView() {
                 Generate
               </Button>
               <Button variant="outline" onClick={() => setNotes(sampleNotes)}>
-                Use sample
+                Use sample notes
               </Button>
             </div>
           </CardContent>
@@ -99,7 +99,7 @@ export function MeetingView() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3">
-              <CardTitle>Review output</CardTitle>
+              <CardTitle>Ready to review</CardTitle>
               {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode}</Badge> : null}
             </div>
           </CardHeader>
@@ -108,13 +108,13 @@ export function MeetingView() {
               <div className="grid min-h-96 place-items-center rounded-3xl bg-muted p-6 text-center">
                 <div>
                   <MessagesSquare className="mx-auto size-8 text-primary" />
-                  <div className="mt-3 font-bold">Meeting summary appears here</div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Generated tasks remain drafts until added.</p>
+                  <div className="mt-3 font-bold">Your meeting summary will appear here</div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Tasks stay as drafts until you add them.</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before saving</Badge>
                 <MeetingSection title="Summary" items={[result.summary]} />
                 <MeetingSection title="Decisions made" items={result.decisions_made} />
                 <div>

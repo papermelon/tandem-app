@@ -242,12 +242,12 @@ export function EditPatientModal({ open, patient, onClose, onSave, onRemove, can
                   Remove profile from this browser
                 </Button>
                 <p className="px-1 text-xs leading-5 text-muted-foreground">
-                  Removing only affects this local demo browser state. Supabase records are not deleted.
+                  Removing only affects the demo data on this browser. Shared account records are not deleted.
                 </p>
               </>
             ) : liveMode ? (
               <p className="rounded-xl bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                This shared profile is live in Supabase. Edits are visible to signed-in teammates; removal is disabled for the demo.
+                This shared profile is connected to your account. Edits are visible to signed-in family members; removal is disabled for the demo.
               </p>
             ) : null}
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { HeartPulse, Mail, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/components/auth/auth-provider";
@@ -353,11 +354,16 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-background px-6 text-center">
         <div>
-          <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-            T
-          </div>
-          <div className="mt-4 text-lg font-bold">Loading Tandem</div>
-          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing your care circle.</p>
+          <Image
+            src="/tandem-mark.png"
+            alt="Tandem logo"
+            width={48}
+            height={48}
+            className="mx-auto size-12 rounded-2xl object-contain"
+            priority
+          />
+          <div className="mt-4 text-lg font-bold">Opening Tandem</div>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Getting your family care space ready.</p>
         </div>
       </div>
     );
@@ -418,11 +424,11 @@ function LiveOnboarding({
       });
       const payload = (await response.json()) as { data?: AppData; error?: string };
       if (!response.ok || !payload.data) {
-        throw new Error(payload.error ?? "Could not create care circle");
+        throw new Error(payload.error ?? "Could not create care space");
       }
       onCreated(payload.data);
     } catch (caught) {
-      setMessage(caught instanceof Error ? caught.message : "Could not create care circle");
+      setMessage(caught instanceof Error ? caught.message : "Could not create care space");
     } finally {
       setSubmitting(false);
     }
@@ -433,21 +439,26 @@ function LiveOnboarding({
       <div className="mx-auto flex max-w-md flex-col gap-6">
         <header className="pt-4">
           <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-2xl bg-primary text-lg font-bold text-primary-foreground">
-              T
-            </div>
+            <Image
+              src="/tandem-mark.png"
+              alt="Tandem logo"
+              width={48}
+              height={48}
+              className="size-12 rounded-2xl object-contain"
+              priority
+            />
             <div>
               <div className="text-2xl font-bold">Tandem</div>
-              <div className="text-sm text-muted-foreground">Live care setup</div>
+              <div className="text-sm text-muted-foreground">Care Moves Better in Tandem</div>
             </div>
           </div>
           <div className="mt-10">
             <HeartPulse className="size-10 text-primary" />
             <h1 className="mt-4 text-3xl font-bold leading-tight tracking-normal">
-              Set up your first care circle.
+              Start a care space for your family.
             </h1>
             <p className="mt-3 text-base leading-7 text-muted-foreground">
-              Hi {caregiverName}. This live account has no shared care recipient yet, so we will start with the person you care for and invite the rest of the family after.
+              Hi {caregiverName}. Start with the person you care for. You can bring in the rest of the family after.
             </p>
           </div>
         </header>
@@ -455,7 +466,7 @@ function LiveOnboarding({
         <form className="space-y-4 rounded-3xl border bg-white/80 p-4 shadow-sm" onSubmit={submit}>
           <div className="flex items-center gap-2 text-sm font-bold">
             <UserPlus className="size-4 text-primary" />
-            Care recipient
+            Loved one
           </div>
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</span>
@@ -490,7 +501,7 @@ function LiveOnboarding({
               Invite caregivers
             </div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Add emails now for the demo flow. Actual email delivery can be wired after an invite table is added.
+              Add family emails now so this care space is ready to share when invites are enabled.
             </p>
             <Textarea
               className="mt-3"
@@ -504,7 +515,7 @@ function LiveOnboarding({
           {message ? <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{message}</p> : null}
 
           <Button type="submit" className="w-full" disabled={!name.trim() || submitting}>
-            {submitting ? "Creating care circle" : "Create live care circle"}
+            {submitting ? "Creating care space" : "Create care space"}
           </Button>
         </form>
       </div>

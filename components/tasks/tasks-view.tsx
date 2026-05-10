@@ -43,9 +43,9 @@ export function TasksView() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeading
-        eyebrow="Tasks & Responsibilities"
-        title="Make the next helpful action obvious"
-        description="Unclaimed tasks are visible so someone can pick them up when they have capacity."
+        eyebrow="Tasks"
+        title="Know who is doing what"
+        description="Keep appointments, paperwork, transport, and check-ins in one place so help is easier to offer."
         icon={ClipboardList}
       />
 
@@ -55,9 +55,9 @@ export function TasksView() {
             <Filter className="size-5" />
           </div>
           <div>
-            <div className="font-bold">{unclaimedCount} tasks are ready for someone to take</div>
+            <div className="font-bold">{unclaimedCount} tasks need someone to take them</div>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              These are not overdue warnings. They are places where another family member can step in with context.
+              These are open spots where another family member can step in with the context they need.
             </p>
           </div>
         </div>

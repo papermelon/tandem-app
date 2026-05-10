@@ -22,9 +22,9 @@ export function LoadView() {
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeading
-        eyebrow="Care Load Visibility"
-        title="A shared view of effort"
-        description="Designed to make invisible coordination visible without ranking anyone."
+        eyebrow="Care Load"
+        title="See where the weight is landing"
+        description="Make invisible coordination easier to notice, without turning family care into a scorecard."
         icon={LineChart}
       />
 
@@ -64,10 +64,10 @@ export function LoadView() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-bold leading-7">
-              Rachel has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              Rachel has handled most appointment-related tasks this week. The next transport task may be easier for someone else to take.
             </p>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              This view focuses on transferability: what context is needed, what can be picked up, and where support can be shared.
+              Use this to spot what can be picked up, what context is needed, and where support can be shared.
             </p>
             <div className="mt-5 grid grid-cols-3 gap-3">
               {totals.map((member) => (

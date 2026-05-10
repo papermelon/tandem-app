@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, Globe, KeyRound, Plane, RefreshCw, Settings, Shield, Sparkles, User, Wand2 } from "lucide-react";
+import { Copy, Database, ExternalLink, FileText, Globe, KeyRound, MessageCircle, Plane, RefreshCw, Settings, Shield, Sparkles, User, Wand2 } from "lucide-react";
 
 import { SignOutButton, useAuth } from "@/components/auth/auth-provider";
 import { MemberAvatar } from "@/components/shared/member-avatar";
@@ -17,6 +17,7 @@ import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/
 import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
 
 const ROUTING_CATEGORIES: TaskCategory[] = [
@@ -36,6 +37,9 @@ export function SettingsView() {
   const [editingName, setEditingName] = React.useState(false);
   const [draftName, setDraftName] = React.useState(home.state.caregiver.name);
   const [demoForced, setDemoForced] = React.useState(false);
+  const [telegramLink, setTelegramLink] = React.useState<TelegramLinkState | null>(null);
+  const [telegramStatus, setTelegramStatus] = React.useState<string | null>(null);
+  const [telegramLoading, setTelegramLoading] = React.useState(false);
   const language = (home.state.caregiver.language ?? "en") as LanguageCode;
 
   React.useEffect(() => {
@@ -72,6 +76,45 @@ export function SettingsView() {
     window.location.assign("/");
   }
 
+  async function handleCreateTelegramLink() {
+    setTelegramLoading(true);
+    setTelegramStatus(null);
+    setTelegramLink(null);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      const token = data.session?.access_token;
+      if (!token) {
+        throw new Error("Sign in with Supabase before connecting Telegram.");
+      }
+
+      const response = await fetch("/api/telegram/link", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ careRecipientId: recipient.id })
+      });
+      const payload = (await response.json()) as TelegramLinkState & { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Could not create Telegram link.");
+
+      setTelegramLink(payload);
+      setTelegramStatus(`Link expires at ${new Date(payload.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`);
+    } catch (error) {
+      setTelegramStatus(error instanceof Error ? error.message : "Could not create Telegram link.");
+    } finally {
+      setTelegramLoading(false);
+    }
+  }
+
+  async function copyTelegramCommand() {
+    if (!telegramLink?.startCommand) return;
+    await navigator.clipboard.writeText(telegramLink.startCommand);
+    setTelegramStatus("Start command copied.");
+  }
+
   const isLiveMode = (auth.profile?.mode === "supabase" && !demoForced) || !mockMode;
 
   return (
@@ -83,7 +126,7 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="size-5 text-primary" />
-              Caregiver
+              Your profile
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -137,7 +180,7 @@ export function SettingsView() {
                 </select>
               </label>
               <p className="mt-2 text-xs text-muted-foreground">
-                SEA-LION-aligned language list. UI translation is wired in a follow-up.
+                Choose the language you prefer for future family updates.
               </p>
             </div>
           </CardContent>
@@ -147,7 +190,7 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="size-5 text-primary" />
-              App mode
+              Account
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -156,21 +199,21 @@ export function SettingsView() {
                 <div>
                   <div className="font-semibold">
                     {auth.profile?.mode === "supabase" && demoForced
-                      ? "Viewing Rachel's demo"
+                      ? "Viewing Rachel's demo family"
                       : auth.profile?.mode === "supabase"
-                        ? "Signed in with Supabase"
+                        ? "Signed in"
                         : mockMode
-                          ? "Local demo mode"
-                          : "Supabase connected"}
+                          ? "Demo mode"
+                          : "Connected"}
                   </div>
                   <div className="mt-1 text-sm leading-6 text-muted-foreground">
                     {auth.profile?.mode === "supabase" && demoForced
-                      ? "Your live account is still signed in. Demo data is local to this browser."
+                      ? "Your account is still signed in. Demo data stays on this browser."
                       : auth.profile?.mode === "supabase"
                       ? auth.profile.email ?? "Authenticated session is active."
                       : mockMode
-                        ? "No backend keys are required for the hackathon demo."
-                        : "Data can be loaded from Supabase tables and Storage."}
+                        ? "You are using sample family data on this browser."
+                        : "Your shared care data is connected."}
                   </div>
                 </div>
                 <Badge variant={isLiveMode ? "success" : "warning"}>
@@ -182,35 +225,35 @@ export function SettingsView() {
             {auth.profile?.mode === "supabase" && demoForced ? (
               <div className="space-y-2">
                 <Button onClick={handleReturnToLive} className="w-full">
-                  Return to my live care circle
+                  Return to my family care space
                 </Button>
                 <p className="px-1 text-xs leading-5 text-muted-foreground">
-                  Leaves the Rachel and Ah Muay demo and reloads only the care circles attached to your Supabase account.
+                  Leaves the Rachel and Ah Muay demo and reloads the care spaces attached to your account.
                 </p>
               </div>
             ) : null}
             <div className="space-y-2">
               <Button onClick={handleShowDemoCircle} variant="outline" className="w-full">
                 <RefreshCw />
-                View Rachel&apos;s demo circle
+                View Rachel&apos;s demo family
               </Button>
               <p className="px-1 text-xs leading-5 text-muted-foreground">
-                Intentionally switches this browser to the local Rachel and Ah Muay demo. Supabase data is not changed.
+                Switches this browser to Rachel and Ah Muay&apos;s sample family data. Your account data is not changed.
               </p>
             </div>
             <div className="space-y-2">
               <Button onClick={handleResetEverything} variant="outline" className="w-full">
                 <RefreshCw />
-                Reset local demo records
+                Reset demo data
               </Button>
               <p className="px-1 text-xs leading-5 text-muted-foreground">
-                Clears local task, timeline, home, and onboarding changes in this browser only.
+                Clears demo tasks, timeline updates, and setup changes on this browser only.
               </p>
             </div>
             <Button asChild variant="ghost" className="w-full">
               <Link href="/handover">
                 <Plane className="size-4" />
-                Handover / share circle
+                Handover / share care space
               </Link>
             </Button>
           </CardContent>
@@ -219,8 +262,58 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-primary" />
+              Telegram input
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="rounded-2xl border bg-white/70 p-3">
+              <div className="font-semibold">{recipient.name}</div>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Connect Telegram to this care space before forwarding care notes, images, or PDFs.
+              </p>
+            </div>
+            <Button
+              onClick={handleCreateTelegramLink}
+              disabled={telegramLoading || !isLiveMode}
+              className="w-full"
+            >
+              <MessageCircle className="size-4" />
+              {telegramLoading ? "Creating link…" : "Connect Telegram"}
+            </Button>
+            {telegramLink ? (
+              <div className="space-y-2 rounded-2xl border bg-white/70 p-3">
+                {telegramLink.botUrl ? (
+                  <Button asChild variant="soft" className="w-full">
+                    <a href={telegramLink.botUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="size-4" />
+                      Open Telegram bot
+                    </a>
+                  </Button>
+                ) : null}
+                <div className="rounded-xl bg-muted/60 p-3 font-mono text-xs break-all">
+                  {telegramLink.startCommand}
+                </div>
+                <Button variant="outline" size="sm" onClick={copyTelegramCommand} className="w-full">
+                  <Copy className="size-4" />
+                  Copy start command
+                </Button>
+              </div>
+            ) : null}
+            {telegramStatus ? <p className="px-1 text-xs leading-5 text-muted-foreground">{telegramStatus}</p> : null}
+            {!isLiveMode ? (
+              <p className="px-1 text-xs leading-5 text-muted-foreground">
+                Telegram linking is available for live Supabase care spaces.
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Shield className="size-5 text-primary" />
-              Care recipient
+              Loved one
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -237,7 +330,7 @@ export function SettingsView() {
       <section className="mt-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Family members</CardTitle>
+            <CardTitle>Family and helpers</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((member) => (
@@ -265,7 +358,7 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Records and next views</CardTitle>
+          <CardTitle>Records and tools</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-2xl border bg-white/70 p-3">
@@ -273,17 +366,17 @@ export function SettingsView() {
                 <Database className="size-4 text-primary" />
                 {documents.length} document records
               </div>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">Doctor memos, HDB EASE letters, AIC grant notes, and bills can be reviewed before saving.</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Doctor memos, HDB EASE letters, AIC grant notes, and bills wait for review before saving.</p>
             </div>
             <div className="grid gap-2">
               <Button asChild variant="soft">
-                <Link href="/handover">Generate handover</Link>
+                <Link href="/handover">Prepare handover</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/meeting">Family meeting assistant</Link>
+                <Link href="/meeting">Summarize family meeting</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/capture"><FileText /> Image-to-record capture</Link>
+                <Link href="/capture"><FileText /> Add paperwork</Link>
               </Button>
             </div>
           </CardContent>
@@ -295,12 +388,12 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="size-5 text-primary" />
-              Smart Assign preferences
+              Task matching preferences
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              Tandem proposes assignees based on category history, current load, and the preferences set here. Lead caregiver still approves before anything is dispatched.
+              Tandem suggests who might be best placed to help based on task type, current load, and these preferences. A family member still checks before anything is saved.
             </p>
             {members.map((member) => (
               <RoutingPreferenceRow
@@ -316,6 +409,15 @@ export function SettingsView() {
     </div>
   );
 }
+
+type TelegramLinkState = {
+  token: string;
+  expiresAt: string;
+  botUsername: string | null;
+  botUrl: string | null;
+  startCommand: string;
+  recipientName?: string;
+};
 
 type RoutingTelemetry = {
   total: number;
