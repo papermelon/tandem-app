@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { HeartPulse, LogOut, Mail, UserPlus } from "lucide-react";
+import { HeartPulse, LogOut, Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,6 @@ type AuthContextValue = {
   isSupabaseConfigured: boolean;
   signInWithEmail: (input: { email: string; name: string }) => Promise<string>;
   continueAsRachel: () => void;
-  startFresh: (name: string) => void;
   signOut: () => Promise<void>;
 };
 
@@ -156,25 +155,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/");
   }, [router]);
 
-  const startFresh = React.useCallback(
-    (name: string) => {
-      const displayName = name.trim() || "Caregiver";
-      const nextProfile: AuthProfile = {
-        id: "demo-new-caregiver",
-        name: displayName,
-        mode: "demo",
-        onboarding: "new",
-      };
-      setForceDemoData(true);
-      clearCareDemoData();
-      writeHomeStateSnapshot(createFreshHomeState(displayName));
-      writeStoredProfile(nextProfile);
-      setProfile(nextProfile);
-      router.push("/");
-    },
-    [router],
-  );
-
   const signInWithEmail = React.useCallback(
     async ({ email, name }: { email: string; name: string }) => {
       if (!supabase) return "Supabase keys are not configured. Use a demo path for now.";
@@ -208,10 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isSupabaseConfigured,
       signInWithEmail,
       continueAsRachel,
-      startFresh,
       signOut,
     }),
-    [continueAsRachel, isSupabaseConfigured, profile, signInWithEmail, signOut, startFresh],
+    [continueAsRachel, isSupabaseConfigured, profile, signInWithEmail, signOut],
   );
 
   if (pathname.startsWith("/auth/callback")) {
@@ -292,7 +271,7 @@ function AuthWelcome() {
               Coordinate care without losing the family context.
             </h1>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Start fresh for onboarding, or continue as Rachel to see Ah Muay's existing care circle with Ming and Lina.
+              Continue as Rachel to view the demo circle, or sign in to create and manage your own live care circle.
             </p>
           </div>
         </section>
@@ -333,10 +312,6 @@ function AuthWelcome() {
             {message ? <p className="text-sm leading-6 text-muted-foreground">{message}</p> : null}
           </form>
 
-          <Button variant="ghost" className="w-full" onClick={() => auth.startFresh(name)}>
-            <UserPlus className="size-4" />
-            Start fresh
-          </Button>
         </section>
       </div>
     </main>
