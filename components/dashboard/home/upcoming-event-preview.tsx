@@ -32,9 +32,10 @@ function buildMonthMatrix(reference: Date) {
 export function UpcomingEventPreview({ items }: Props) {
   const [expanded, setExpanded] = React.useState(false);
   const [view, setView] = React.useState<View>("calendar");
+  const [now] = React.useState(() => Date.now());
 
   const upcoming = items
-    .filter((i) => new Date(i.timestamp).getTime() >= Date.now() - 1000 * 60 * 60 * 24)
+    .filter((i) => new Date(i.timestamp).getTime() >= now - 1000 * 60 * 60 * 24)
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   const next = upcoming[0];
 

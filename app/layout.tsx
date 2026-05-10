@@ -7,8 +7,13 @@ import { HomeNavbar } from "@/components/dashboard/home/home-navbar";
 import { CareDataProvider } from "@/components/providers/care-data-provider";
 
 export const metadata: Metadata = {
-  title: "Tandem | Family Care Hub",
-  description: "A mobile-first family caregiving coordination app for adult children caring for an ageing parent."
+  title: "Tandem | Family Care, Shared",
+  description: "A mobile-first app for families coordinating care for someone they love.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png"
+  }
 };
 
 export const viewport: Viewport = {

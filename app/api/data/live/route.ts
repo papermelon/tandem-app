@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 
 import { createSeedData } from "@/lib/seed-data";
@@ -6,6 +7,15 @@ import type { AppData, CareProfile } from "@/lib/types";
 
 export const runtime = "nodejs";
 
+type RecipientDraft = {
+  name?: string;
+  age?: number;
+  relationship?: string;
+  country?: string;
+  context?: string;
+  address?: string;
+};
+
 function hasCareProfile(profile: unknown): profile is CareProfile {
   return (
     typeof profile === "object" &&
@@ -13,6 +23,15 @@ function hasCareProfile(profile: unknown): profile is CareProfile {
     Array.isArray((profile as CareProfile).sections) &&
     (profile as CareProfile).sections.length > 0
   );
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "C";
 }
 
 async function getSignedInProfile(request: Request) {
@@ -31,6 +50,11 @@ async function getSignedInProfile(request: Request) {
     return { error: NextResponse.json({ error: "Invalid session" }, { status: 401 }) };
   }
 
+  const displayName =
+    (typeof data.user.user_metadata?.name === "string" && data.user.user_metadata.name.trim()) ||
+    data.user.email?.split("@")[0] ||
+    "Caregiver";
+
   const existing = await supabase
     .from("users")
     .select("id, name, role, avatar, phone, is_default_caregiver")
@@ -41,11 +65,28 @@ async function getSignedInProfile(request: Request) {
     return { error: NextResponse.json({ error: existing.error.message }, { status: 500 }) };
   }
 
-  if (!existing.data) {
-    return { error: NextResponse.json({ error: "Profile is not ready yet" }, { status: 404 }) };
+  if (existing.data) {
+    return { supabase, profile: existing.data };
   }
 
-  return { supabase, profile: existing.data };
+  const inserted = await supabase
+    .from("users")
+    .insert({
+      id: `user-${data.user.id.slice(0, 8)}`,
+      auth_user_id: data.user.id,
+      name: displayName,
+      role: "Family caregiver",
+      avatar: initials(displayName),
+      is_default_caregiver: true
+    })
+    .select("id, name, role, avatar, phone, is_default_caregiver")
+    .single();
+
+  if (inserted.error) {
+    return { error: NextResponse.json({ error: inserted.error.message }, { status: 500 }) };
+  }
+
+  return { supabase, profile: inserted.data };
 }
 
 async function loadCircleData(
@@ -214,6 +255,76 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Could not load live care data" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const session = await getSignedInProfile(request);
+  if ("error" in session) return session.error;
+
+  const body = (await request.json().catch(() => ({}))) as { recipient?: RecipientDraft };
+  const draft = body.recipient ?? {};
+  const name = draft.name?.trim();
+
+  if (!name) {
+    return NextResponse.json({ error: "Care recipient name is required" }, { status: 400 });
+  }
+
+  const careCircleId = `circle-${randomUUID().slice(0, 8)}`;
+  const recipientId = `recipient-${randomUUID().slice(0, 8)}`;
+  const relationship = draft.relationship?.trim() || "Family member";
+  const country = draft.country?.trim() || "Singapore";
+
+  const circleResult = await session.supabase
+    .from("care_circles")
+    .insert({
+      id: careCircleId,
+      name: `${name}'s care circle`,
+      created_by: session.profile.id
+    });
+
+  if (circleResult.error) {
+    return NextResponse.json({ error: circleResult.error.message }, { status: 500 });
+  }
+
+  const memberResult = await session.supabase.from("circle_members").insert({
+    care_circle_id: careCircleId,
+    user_id: session.profile.id,
+    member_role: "lead caregiver"
+  });
+
+  if (memberResult.error) {
+    return NextResponse.json({ error: memberResult.error.message }, { status: 500 });
+  }
+
+  const recipientResult = await session.supabase.from("care_recipients").insert({
+    id: recipientId,
+    care_circle_id: careCircleId,
+    name,
+    age: Number.isFinite(draft.age) ? draft.age : 0,
+    relationship,
+    country,
+    context: draft.context?.trim() || `${relationship} in ${country}. Add care notes as you learn them.`,
+    address: draft.address?.trim() || country,
+    care_profile: {
+      summary: "New care profile. Add food, mobility, medication, and safety notes during setup.",
+      updatedAt: new Date().toISOString().slice(0, 10),
+      sections: []
+    }
+  });
+
+  if (recipientResult.error) {
+    return NextResponse.json({ error: recipientResult.error.message }, { status: 500 });
+  }
+
+  try {
+    const result = await loadCircleData(session.supabase, session.profile.id);
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Created circle but could not reload live care data" },
       { status: 500 }
     );
   }

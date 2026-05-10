@@ -745,9 +745,9 @@ export function TandemApp() {
         <div className="brand-lockup">
           <Image
             src="/tandem-logo.jpg"
-            alt="Tandem Family Caregiver App logo"
-            width={170}
-            height={82}
+            alt="Tandem - Care Moves Better in Tandem"
+            width={213}
+            height={120}
             className="brand-logo"
             priority
           />

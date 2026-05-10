@@ -49,9 +49,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_WEBHOOK_SECRET=
 TELEGRAM_ALLOWED_USER_IDS=
+TELEGRAM_BOT_USERNAME=
 ```
 
 For Vercel, set `NEXT_PUBLIC_APP_URL` to the production URL. `TELEGRAM_ALLOWED_USER_IDS` is optional; when set, use comma-separated Telegram numeric user IDs to keep the bot private.
+`TELEGRAM_BOT_USERNAME` is optional; Tandem can derive it from `TELEGRAM_BOT_TOKEN`, but setting it avoids an extra Bot API lookup when generating connect links.
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` in client code. Tandem only uses it inside server routes.
 
@@ -137,6 +139,25 @@ The original one-page AI briefing flow is preserved at `/handover/legacy` for re
 
 Tandem supports family caregiving coordination and does not provide medical advice. Medication features are reminders and notes only, not clinical recommendations. AI outputs are marked for review before saving. The care-history chat answers strictly from recorded timeline data and surfaces a `not_found` confidence when the answer isn't in the data.
 
+## Demo Auth
+
+The app starts with a lightweight Auth/onboarding screen:
+
+- **Continue as Rachel** forces local demo data and opens the existing Ah Muay care circle with Rachel, Ming, and Lina.
+- **Start fresh** forces local demo data with an empty care-recipient list so the onboarding flow can be shown.
+- Email magic-link sign-in uses Supabase Auth when `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are configured. Use this path when two people should edit the same shared Supabase care recipient profile.
+
+Supabase Auth currently bootstraps a `public.users` row for the signed-in person. In live mode, the Home profile selector reads the shared Supabase care recipient and profile edits are persisted through `/api/data/care-recipients/[recipientId]`.
+
+For a live Supabase demo:
+
+1. Apply all migrations in `supabase/migrations`, including `20260612000000_add_care_recipient_profile.sql` and `20260613000000_add_care_recipient_relationship.sql`.
+2. Run `supabase/seed.sql`.
+3. Add `http://localhost:3000/auth/callback` and the deployed `/auth/callback` URL to Supabase Auth redirect URLs.
+4. Sign in with the email link instead of using **Continue as Rachel**.
+
+Production-grade care-circle scoping still needs stricter RLS, invite flows, and session-scoped API writes.
+
 ## Telegram Bot Setup
 
 1. Create a bot with Telegram `@BotFather`.
@@ -149,6 +170,19 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=<NEXT_PUBL
 ```
 
 Forward an image, screenshot, PDF, or text message to the private bot. Tandem stores the source in Supabase, extracts care details with OpenAI, and sends back a Save All / Ignore preview. Pending items are visible in `/inbox`.
+
+Telegram must be linked from a signed-in Tandem account before forwarded items are accepted. In Settings, use **Connect Telegram** to generate a short-lived `/start <token>` link for the active care recipient. The webhook validates the token, links the Telegram sender to the Tandem user and care circle, then stores future forwarded items against that care circle.
+
+Recommended bot commands:
+
+```text
+start - Connect Tandem or show link status
+status - Show linked Tandem care space
+recipient - Show active care recipient
+unlink - Disconnect Telegram from Tandem
+```
+
+For production, prefer token-based linking over `TELEGRAM_ALLOWED_USER_IDS`. The allow-list is useful for demos, but every accepted Telegram sender should still resolve through `telegram_users -> users -> circle_members -> care_circles`.
 
 ## Project Structure
 

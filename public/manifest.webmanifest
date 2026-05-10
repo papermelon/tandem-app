@@ -4,8 +4,8 @@
   "description": "Care Moves Better in Tandem.",
   "display": "standalone",
   "start_url": "/",
-  "background_color": "#f6efe5",
-  "theme_color": "#0f4c5c",
+  "background_color": "#f7f2ea",
+  "theme_color": "#2f7d78",
   "icons": [
     {
       "src": "/favicon.png",

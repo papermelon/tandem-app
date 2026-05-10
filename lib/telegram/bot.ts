@@ -14,7 +14,7 @@ export type TelegramUser = {
 export type TelegramMessage = {
   message_id: number;
   from?: TelegramUser;
-  chat: { id: number };
+  chat: { id: number; type?: string };
   text?: string;
   caption?: string;
   photo?: Array<{ file_id: string; file_size?: number; width: number; height: number }>;

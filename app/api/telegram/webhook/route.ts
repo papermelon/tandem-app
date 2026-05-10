@@ -19,7 +19,21 @@ import {
   type TelegramMessage,
   type TelegramUpdate
 } from "@/lib/telegram/bot";
-import type { CaptureSourceType, ExtractionResult } from "@/lib/types";
+import {
+  getMessageText,
+  getTelegramMessageInput,
+  isAllowedTelegramUser,
+  parseTelegramCommand,
+  previewCounts,
+  safeFileName,
+  verifyTelegramSecretHeader
+} from "@/lib/telegram/ingest";
+import {
+  getTelegramLink,
+  linkTelegramUserFromToken,
+  unlinkTelegramUser
+} from "@/lib/telegram/linking";
+import type { CaptureSourceType } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -27,31 +41,8 @@ function jsonOk() {
   return NextResponse.json({ ok: true });
 }
 
-function isAllowedTelegramUser(userId?: number) {
-  const allowed = process.env.TELEGRAM_ALLOWED_USER_IDS?.split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-
-  if (!allowed || allowed.length === 0) return true;
-  return userId ? allowed.includes(String(userId)) : false;
-}
-
 function verifyTelegramSecret(request: Request) {
-  const expected = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (!expected) return true;
-  return request.headers.get("x-telegram-bot-api-secret-token") === expected;
-}
-
-function safeFileName(fileName: string) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-}
-
-function bestPhoto(message: TelegramMessage) {
-  return message.photo?.slice().sort((a, b) => (b.file_size ?? 0) - (a.file_size ?? 0))[0];
-}
-
-function getMessageText(message: TelegramMessage) {
-  return message.text || message.caption || "";
+  return verifyTelegramSecretHeader(request.headers.get("x-telegram-bot-api-secret-token"));
 }
 
 async function uploadTelegramFile(input: {
@@ -75,17 +66,6 @@ async function uploadTelegramFile(input: {
   if (error) throw error;
 
   return { buffer, storagePath };
-}
-
-function previewCounts(result: ExtractionResult) {
-  const appointments = result.recommended_tasks.filter((task) => task.category === "appointment").length;
-  return {
-    documentType: result.document_type,
-    appointments,
-    tasks: Math.max(result.recommended_tasks.length - appointments, 0),
-    medicationItems: result.medications_or_care_items.length,
-    summaryText: result.plain_english_summary
-  };
 }
 
 async function handleCallback(update: TelegramUpdate) {
@@ -123,8 +103,31 @@ async function handleCallback(update: TelegramUpdate) {
 }
 
 async function handleMessage(message: TelegramMessage) {
+  const command = parseTelegramCommand(message.text);
+  if (command) return await handleCommand(message, command);
+
+  if (message.chat.type && message.chat.type !== "private") {
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: "Please forward care notes to Tandem in a private chat with this bot."
+    });
+    return jsonOk();
+  }
+
   if (!isAllowedTelegramUser(message.from?.id)) {
     await sendTelegramMessage({ chatId: message.chat.id, text: "This Tandem bot is private." });
+    return jsonOk();
+  }
+
+  const supabase = createSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase server environment is not configured.");
+
+  const link = await getTelegramLink(supabase, message.from);
+  if (!link) {
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: "Please connect Telegram from Tandem settings first. This keeps forwarded care notes attached to the right care recipient."
+    });
     return jsonOk();
   }
 
@@ -134,68 +137,35 @@ async function handleMessage(message: TelegramMessage) {
   const platformSenderId = message.from?.id ? String(message.from.id) : undefined;
   const platformMessageId = String(message.message_id);
   const context = `Forwarded by ${senderName} through Telegram. ${getMessageText(message)}`;
-
-  const photo = bestPhoto(message);
-  const document = message.document;
-  const text = message.text;
+  const input = getTelegramMessageInput(message);
 
   let captureId: string;
 
-  if (photo) {
-    const mimeType = "image/jpeg";
-    const fileName = `telegram-photo-${message.message_id}.jpg`;
-    const uploaded = await uploadTelegramFile({ fileId: photo.file_id, fileName, mimeType, sourceType: "image" });
-    const extraction = await extractCareDocument({ buffer: uploaded.buffer, fileName, mimeType, context });
-    captureId = await createCaptureFromExtraction({
-      platform: "telegram",
-      sourceType: "image",
-      result: extraction.result,
-      senderName,
-      platformSenderId,
-      platformMessageId,
-      originalFilePath: uploaded.storagePath,
-      originalFileName: fileName,
-      originalFileMimeType: mimeType,
-      rawText: message.caption
-    });
-
-    await sendTelegramMessage({
-      chatId: message.chat.id,
-      text: extractionPreviewText(previewCounts(extraction.result)),
-      replyMarkup: captureReplyMarkup(captureId)
-    });
-    return jsonOk();
-  }
-
-  if (document) {
-    const mimeType = document.mime_type || "application/octet-stream";
-    const fileName = document.file_name || `telegram-document-${message.message_id}`;
-    if (!mimeType.startsWith("image/") && mimeType !== "application/pdf") {
-      await sendTelegramMessage({
-        chatId: message.chat.id,
-        text: "I can currently process forwarded images and PDFs. This file type is not supported yet."
-      });
-      return jsonOk();
-    }
-
+  if (input.kind === "photo" || input.kind === "document") {
     const uploaded = await uploadTelegramFile({
-      fileId: document.file_id,
-      fileName,
-      mimeType,
-      sourceType: mimeType.startsWith("image/") ? "image" : "document"
+      fileId: input.fileId,
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      sourceType: input.sourceType
     });
-    const extraction = await extractCareDocument({ buffer: uploaded.buffer, fileName, mimeType, context });
+    const extraction = await extractCareDocument({
+      buffer: uploaded.buffer,
+      fileName: input.fileName,
+      mimeType: input.mimeType,
+      context
+    });
     captureId = await createCaptureFromExtraction({
       platform: "telegram",
-      sourceType: mimeType.startsWith("image/") ? "image" : "document",
+      sourceType: input.sourceType,
       result: extraction.result,
       senderName,
       platformSenderId,
       platformMessageId,
       originalFilePath: uploaded.storagePath,
-      originalFileName: fileName,
-      originalFileMimeType: mimeType,
-      rawText: message.caption
+      originalFileName: input.fileName,
+      originalFileMimeType: input.mimeType,
+      rawText: input.rawText,
+      careCircleId: link.careCircleId
     });
 
     await sendTelegramMessage({
@@ -206,16 +176,17 @@ async function handleMessage(message: TelegramMessage) {
     return jsonOk();
   }
 
-  if (text) {
-    const extraction = await extractCareText({ text, context });
+  if (input.kind === "text") {
+    const extraction = await extractCareText({ text: input.text, context });
     captureId = await createCaptureFromExtraction({
       platform: "telegram",
-      sourceType: "text",
+      sourceType: input.sourceType,
       result: extraction.result,
       senderName,
       platformSenderId,
       platformMessageId,
-      rawText: text
+      rawText: input.rawText,
+      careCircleId: link.careCircleId
     });
 
     await sendTelegramMessage({
@@ -228,7 +199,68 @@ async function handleMessage(message: TelegramMessage) {
 
   await sendTelegramMessage({
     chatId: message.chat.id,
-    text: "I can process forwarded text, images, and PDFs first. Voice notes are next."
+    text: input.replyText
+  });
+  return jsonOk();
+}
+
+async function handleCommand(message: TelegramMessage, command: { command: string; argument?: string }) {
+  if (message.chat.type && message.chat.type !== "private") {
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: "Please connect Tandem in a private chat with this bot."
+    });
+    return jsonOk();
+  }
+
+  if (!isAllowedTelegramUser(message.from?.id)) {
+    await sendTelegramMessage({ chatId: message.chat.id, text: "This Tandem bot is private." });
+    return jsonOk();
+  }
+
+  const supabase = createSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase server environment is not configured.");
+
+  if (command.command === "start") {
+    if (command.argument) {
+      const result = await linkTelegramUserFromToken(supabase, message, command.argument);
+      await sendTelegramMessage({ chatId: message.chat.id, text: result.text });
+      return jsonOk();
+    }
+
+    const link = await getTelegramLink(supabase, message.from);
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: link?.recipientName
+        ? `Telegram is connected to ${link.recipientName}'s Tandem care space.`
+        : "Open Tandem settings and use Connect Telegram to link this bot."
+    });
+    return jsonOk();
+  }
+
+  if (command.command === "status" || command.command === "recipient") {
+    const link = await getTelegramLink(supabase, message.from);
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: link
+        ? `Connected to ${link.recipientName ?? "your Tandem care recipient"}. Forward text, images, or PDFs here.`
+        : "Telegram is not connected yet. Open Tandem settings and use Connect Telegram."
+    });
+    return jsonOk();
+  }
+
+  if (command.command === "unlink") {
+    const ok = await unlinkTelegramUser(supabase, message.from);
+    await sendTelegramMessage({
+      chatId: message.chat.id,
+      text: ok ? "Telegram has been disconnected from Tandem." : "Telegram was not connected to Tandem."
+    });
+    return jsonOk();
+  }
+
+  await sendTelegramMessage({
+    chatId: message.chat.id,
+    text: "I understand /start, /status, /recipient, and /unlink. Forward care notes, images, or PDFs after connecting Tandem."
   });
   return jsonOk();
 }

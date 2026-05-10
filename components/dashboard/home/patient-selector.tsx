@@ -25,7 +25,7 @@ export function PatientSelector({ patients, selectedId, onSelect, onAdd, onBegin
 
   return (
     <section className="space-y-3">
-      <h2 className="text-base font-bold">Who are you caring for today?</h2>
+      <h2 className="text-base font-bold">Who are we helping you care for?</h2>
 
       {patients.length === 0 ? (
         <Card>
@@ -34,12 +34,12 @@ export function PatientSelector({ patients, selectedId, onSelect, onAdd, onBegin
               <Plus className="size-6" />
             </div>
             <div>
-              <div className="font-bold">Add the person you care for</div>
+              <div className="font-bold">Start with one loved one</div>
               <p className="mt-1 text-sm text-muted-foreground">
-                Set up a profile or scan a handover QR to get started.
+                Add a few details now. You can invite the rest of the family later.
               </p>
             </div>
-            <Button onClick={onAdd}>Add care recipient</Button>
+            <Button onClick={onAdd}>Add loved one</Button>
           </CardContent>
         </Card>
       ) : (
@@ -60,7 +60,7 @@ export function PatientSelector({ patients, selectedId, onSelect, onAdd, onBegin
                   type="button"
                   onClick={onAdd}
                   className="flex flex-col items-center gap-1"
-                  aria-label="Add care recipient"
+                  aria-label="Add loved one"
                 >
                   <span className="grid size-12 place-items-center rounded-full border-2 border-dashed border-muted-foreground/40 text-muted-foreground">
                     <Plus className="size-5" />

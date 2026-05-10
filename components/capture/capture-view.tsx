@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AudioLines, Check, FilePlus2, HeartPulse, Loader2, Mic, Paperclip, Sparkles, UploadCloud } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
@@ -9,12 +9,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { useCareData } from "@/components/providers/care-data-provider";
 import { categoryLabels } from "@/lib/labels";
-import { normalizeDueDate } from "@/lib/task-utils";
 import type { ExtractionResult, VoiceResult } from "@/lib/types";
 
 type Mode = "image" | "voice";
+
+type CaptureIngestPayload = {
+  ok: boolean;
+  captureId?: string;
+  reviewUrl?: string;
+  result?: ExtractionResult;
+  voiceResult?: VoiceResult;
+  mode?: "mock" | "openai";
+  error?: string;
+};
 
 export function CaptureView() {
   const [mode, setMode] = React.useState<Mode>("image");
@@ -25,8 +33,8 @@ export function CaptureView() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         eyebrow="Capture"
-        title="Turn care fragments into shared records"
-        description="Upload a memo, letter, appointment slip, or bill. AI drafts the record and tasks; the family reviews before saving."
+        title="Make sense of the paperwork"
+        description="Upload a memo, letter, appointment slip, or bill. Tandem pulls out the dates, tasks, and family updates for review."
         icon={Sparkles}
       />
 
@@ -34,7 +42,7 @@ export function CaptureView() {
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
           <HeartPulse className="size-4 text-primary" />
           <span>
-            New instruction for{" "}
+            New update for{" "}
             <span className="font-bold text-foreground">{patientName}</span>.
           </span>
         </div>
@@ -45,13 +53,13 @@ export function CaptureView() {
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "image" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("image")}
         >
-          Image to record
+          Paperwork
         </button>
         <button
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "voice" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("voice")}
         >
-          Voice to task
+          Voice note
         </button>
       </div>
 
@@ -61,74 +69,43 @@ export function CaptureView() {
 }
 
 function ImageCapture() {
-  const { addDocument, addTasks, addTimelineItem, memberIdByName } = useCareData();
+  const router = useRouter();
   const [file, setFile] = React.useState<File | null>(null);
   const [context, setContext] = React.useState("Doctor memo from SGH after Ah Muay's fall. Need to coordinate rehab transport and medication list.");
   const [result, setResult] = React.useState<ExtractionResult | null>(null);
   const [mode, setMode] = React.useState<"mock" | "openai" | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
-  const [storagePath, setStoragePath] = React.useState<string | undefined>();
+  const [captureId, setCaptureId] = React.useState<string | null>(null);
+  const [reviewUrl, setReviewUrl] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   async function extract(useMock = false) {
     setLoading(true);
-    setSaved(false);
+    setError(null);
+    setCaptureId(null);
+    setReviewUrl(null);
     const formData = new FormData();
     if (file && !useMock) formData.append("file", file);
     formData.append("context", context);
+    formData.append("text", context);
+    formData.append("sourceType", useMock ? "document" : file?.type.startsWith("image/") ? "image" : file ? "document" : "text");
+    if (useMock) formData.append("demo", "true");
 
     try {
-      const response = await fetch("/api/ai/extract", { method: "POST", body: formData });
-      const payload = (await response.json()) as {
-        result: ExtractionResult;
-        mode: "mock" | "openai";
-        storagePath?: string;
-      };
+      const response = await fetch("/api/captures/ingest", { method: "POST", body: formData });
+      const payload = (await response.json()) as CaptureIngestPayload;
+      if (!response.ok || !payload.ok || !payload.result || !payload.captureId || !payload.reviewUrl) {
+        throw new Error(payload.error || "Could not create a review item.");
+      }
       setResult(payload.result);
-      setMode(payload.mode);
-      setStoragePath(payload.storagePath);
+      setMode(payload.mode ?? "mock");
+      setCaptureId(payload.captureId);
+      setReviewUrl(payload.reviewUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create a review item.");
     } finally {
       setLoading(false);
     }
-  }
-
-  function saveResult() {
-    if (!result) return;
-
-    const document = addDocument({
-      documentType: result.document_type,
-      title: result.document_type,
-      summary: result.plain_english_summary,
-      uploadedById: "rachel",
-      storagePath,
-      importantDates: result.important_dates,
-      institutions: result.people_or_institutions,
-      careItems: result.medications_or_care_items
-    });
-
-    const createdTasks = addTasks(
-      result.recommended_tasks.map((task) => ({
-        title: task.title,
-        category: task.category,
-        assigneeId: memberIdByName(task.suggested_assignee),
-        dueDate: normalizeDueDate(task.due_date),
-        status: memberIdByName(task.suggested_assignee) ? "claimed" : "unclaimed",
-        priority: task.priority,
-        linkedRecordId: document.id,
-        notes: result.family_update_message
-      }))
-    );
-
-    addTimelineItem({
-      type: "document",
-      title: `${result.document_type} added`,
-      description: result.family_update_message,
-      authorId: "rachel",
-      linkedRecordId: document.id,
-      linkedTaskIds: createdTasks.map((task) => task.id)
-    });
-
-    setSaved(true);
   }
 
   return (
@@ -137,7 +114,7 @@ function ImageCapture() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UploadCloud className="size-5 text-primary" />
-            Upload document
+            Add paperwork
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -150,7 +127,7 @@ function ImageCapture() {
             }}
           >
             <Paperclip className="size-8 text-primary" />
-            <div className="mt-3 font-bold">{file ? file.name : "Drop or choose an image or PDF"}</div>
+            <div className="mt-3 font-bold">{file ? file.name : "Drop or choose a photo or PDF"}</div>
             <div className="mt-1 text-sm leading-6 text-muted-foreground">
               Doctor memo, discharge summary, prescription, HDB EASE letter, AIC grant letter, appointment slip, or bill.
             </div>
@@ -167,19 +144,20 @@ function ImageCapture() {
           <div className="grid gap-2 sm:grid-cols-2">
             <Button onClick={() => extract(false)} disabled={loading}>
               {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              Extract record
+              Prepare for review
             </Button>
             <Button variant="outline" onClick={() => extract(true)} disabled={loading}>
-              Use demo memo
+              Use sample memo
             </Button>
           </div>
+          {error ? <div className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
         </CardContent>
       </Card>
 
       <Card className="min-h-[28rem]">
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
-            <CardTitle>Review before saving</CardTitle>
+            <CardTitle>Ready for family review</CardTitle>
             {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode === "openai" ? "OpenAI" : "Mock"}</Badge> : null}
           </div>
         </CardHeader>
@@ -188,14 +166,16 @@ function ImageCapture() {
             <div className="grid min-h-72 place-items-center rounded-3xl bg-muted p-6 text-center">
               <div>
                 <FilePlus2 className="mx-auto size-8 text-primary" />
-                <div className="mt-3 font-bold">AI draft will appear here</div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Nothing is saved until you tap Add to Tandem.</p>
+                <div className="mt-3 font-bold">Your review draft will appear here</div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Nothing is added to the family record until someone approves it in the Inbox.
+                </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before saving</Badge>
                 <h2 className="mt-3 text-2xl font-bold">{result.document_type}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{result.plain_english_summary}</p>
               </div>
@@ -205,7 +185,7 @@ function ImageCapture() {
               <InfoList title="Medication or care items" items={result.medications_or_care_items} />
 
               <div>
-                <div className="mb-2 font-bold">Suggested tasks</div>
+                <div className="mb-2 font-bold">Suggested next steps</div>
                 <div className="space-y-2">
                   {result.recommended_tasks.map((task) => (
                     <div key={task.title} className="rounded-2xl border bg-white/70 p-3">
@@ -222,9 +202,9 @@ function ImageCapture() {
 
               <div className="rounded-2xl bg-primary/5 p-3 text-sm leading-6">{result.family_update_message}</div>
 
-              <Button onClick={saveResult} className="w-full" disabled={saved}>
+              <Button onClick={() => reviewUrl && router.push(reviewUrl)} className="w-full" disabled={!captureId || !reviewUrl}>
                 <Check />
-                {saved ? "Added to Tandem" : "Add to Tandem"}
+                Open in Inbox
               </Button>
             </div>
           )}
@@ -235,14 +215,16 @@ function ImageCapture() {
 }
 
 function VoiceCapture() {
-  const { addTasks, addTimelineItem, memberIdByName } = useCareData();
+  const router = useRouter();
   const [text, setText] = React.useState("");
   const [recording, setRecording] = React.useState(false);
   const [audioBlob, setAudioBlob] = React.useState<Blob | null>(null);
   const [result, setResult] = React.useState<VoiceResult | null>(null);
   const [mode, setMode] = React.useState<"mock" | "openai" | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
+  const [captureId, setCaptureId] = React.useState<string | null>(null);
+  const [reviewUrl, setReviewUrl] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
   const recorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<BlobPart[]>([]);
 
@@ -272,44 +254,29 @@ function VoiceCapture() {
 
   async function generate() {
     setLoading(true);
-    setSaved(false);
+    setError(null);
+    setCaptureId(null);
+    setReviewUrl(null);
     const formData = new FormData();
     if (text.trim()) formData.append("text", text);
-    if (audioBlob) formData.append("audio", audioBlob, "voice-update.webm");
+    if (audioBlob) formData.append("file", audioBlob, "voice-update.webm");
+    formData.append("sourceType", "voice");
 
     try {
-      const response = await fetch("/api/ai/voice", { method: "POST", body: formData });
-      const payload = (await response.json()) as { result: VoiceResult; mode: "mock" | "openai" };
-      setResult(payload.result);
-      setMode(payload.mode);
+      const response = await fetch("/api/captures/ingest", { method: "POST", body: formData });
+      const payload = (await response.json()) as CaptureIngestPayload;
+      if (!response.ok || !payload.ok || !payload.voiceResult || !payload.captureId || !payload.reviewUrl) {
+        throw new Error(payload.error || "Could not create a voice review item.");
+      }
+      setResult(payload.voiceResult);
+      setMode(payload.mode ?? "mock");
+      setCaptureId(payload.captureId);
+      setReviewUrl(payload.reviewUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create a voice review item.");
     } finally {
       setLoading(false);
     }
-  }
-
-  function saveVoice() {
-    if (!result) return;
-    const assigneeId = memberIdByName(result.suggested_task.suggested_assignee);
-    const [task] = addTasks([
-      {
-        title: result.suggested_task.title,
-        category: result.suggested_task.category,
-        assigneeId,
-        dueDate: normalizeDueDate(result.suggested_task.due_date),
-        status: assigneeId ? "claimed" : "unclaimed",
-        priority: result.suggested_task.priority,
-        notes: result.reminder
-      }
-    ]);
-
-    addTimelineItem({
-      type: "voice update",
-      title: "Voice update captured",
-      description: result.family_message,
-      authorId: "rachel",
-      linkedTaskIds: [task.id]
-    });
-    setSaved(true);
   }
 
   return (
@@ -318,7 +285,7 @@ function VoiceCapture() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AudioLines className="size-5 text-primary" />
-            Voice update
+            Voice note
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -330,39 +297,39 @@ function VoiceCapture() {
             value={text}
             onChange={(event) => setText(event.target.value)}
             aria-label="Optional voice context"
-            placeholder="Optional context if the recording needs names, places, or a typed fallback."
+            placeholder="Add names, places, or extra context if the voice note needs it."
           />
           <Button onClick={generate} disabled={loading} className="w-full">
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            Generate task
+            Prepare voice note
           </Button>
-          <p className="text-xs leading-5 text-muted-foreground">
-            This MVP uses MediaRecorder when available and keeps the architecture ready for future GPT Realtime voice integrations.
-          </p>
+          {error ? <div className="rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{error}</div> : null}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Review voice result</CardTitle>
+          <CardTitle>Ready for family review</CardTitle>
         </CardHeader>
         <CardContent>
           {!result ? (
             <div className="grid min-h-72 place-items-center rounded-3xl bg-muted p-6 text-center">
               <div>
                 <Mic className="mx-auto size-8 text-primary" />
-                <div className="mt-3 font-bold">Voice task draft appears here</div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Transcription and task creation are reviewable before saving.</p>
+                <div className="mt-3 font-bold">Your voice note summary will appear here</div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Transcript and next steps stay in review until the family saves them.
+                </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <Badge variant="secondary">Review before saving</Badge>
+                <Badge variant="secondary">Check before saving</Badge>
                 {mode ? <Badge variant={mode === "openai" ? "success" : "warning"}>{mode === "openai" ? "OpenAI" : "Mock"}</Badge> : null}
               </div>
               <InfoList title="Transcript" items={[result.transcript]} />
-              <InfoList title="Update note" items={[result.update_note]} />
+              <InfoList title="Family update" items={[result.update_note]} />
               <div className="rounded-2xl border bg-white/70 p-3">
                 <div className="font-bold">{result.suggested_task.title}</div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -372,9 +339,9 @@ function VoiceCapture() {
                 </div>
               </div>
               <div className="rounded-2xl bg-primary/5 p-3 text-sm leading-6">{result.family_message}</div>
-              <Button onClick={saveVoice} disabled={saved} className="w-full">
+              <Button onClick={() => reviewUrl && router.push(reviewUrl)} disabled={!captureId || !reviewUrl} className="w-full">
                 <Check />
-                {saved ? "Added to Tandem" : "Add voice update"}
+                Open in Inbox
               </Button>
             </div>
           )}

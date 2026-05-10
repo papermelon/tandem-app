@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Settings, Stethoscope } from "lucide-react";
 
@@ -14,10 +13,12 @@ const items = [
 
 export function HomeNavbar() {
   const pathname = usePathname() ?? "";
+  if (pathname.startsWith("/auth")) return null;
+
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/90 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-[100] border-t bg-white/90 backdrop-blur"
     >
       <ul className="mx-auto grid max-w-md grid-cols-3">
         {items.map((item) => {
@@ -25,17 +26,20 @@ export function HomeNavbar() {
           const active = item.match(pathname);
           return (
             <li key={item.href}>
-              <Link
-                href={item.href}
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.assign(item.href);
+                }}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 py-3 text-[10px] font-semibold",
+                  "flex w-full flex-col items-center gap-0.5 py-3 text-[10px] font-semibold",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className={cn("size-5", active && "stroke-[2.5]")} />
                 {item.label}
-              </Link>
+              </button>
             </li>
           );
         })}
