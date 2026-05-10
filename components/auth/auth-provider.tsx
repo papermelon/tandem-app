@@ -126,9 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           mode: "supabase",
           onboarding: "new",
         };
-        setForceDemoData(false);
-        clearCareDemoData();
-        writeHomeStateSnapshot(createFreshHomeState(name));
+        if (!shouldForceDemoData()) {
+          setForceDemoData(false);
+          clearCareDemoData();
+          writeHomeStateSnapshot(createFreshHomeState(name));
+        }
         setProfile(nextProfile);
         writeStoredProfile(nextProfile);
         void bootstrapSupabaseProfile(session.access_token, name);
