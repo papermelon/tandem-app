@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { listCaptureEvents } from "@/lib/captures";
+import { listCaptureEvents, listCaptureEventsByIds } from "@/lib/captures";
 import { getErrorMessage } from "@/lib/error-message";
 
 export const runtime = "nodejs";
@@ -8,9 +8,10 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") || "pending_review";
+  const captureId = searchParams.get("capture");
 
   try {
-    const captures = await listCaptureEvents(status);
+    const captures = captureId ? await listCaptureEventsByIds([captureId]) : await listCaptureEvents(status);
     return NextResponse.json({ captures });
   } catch (error) {
     console.error("Failed to load capture events", error);

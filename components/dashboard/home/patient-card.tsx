@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { CareProfileSummary } from "@/components/shared/care-profile-summary";
 import type { CareRecipient, Task, TimelineItem } from "@/lib/types";
 
 import { AvatarUploadModal } from "./avatar-upload-modal";
+import { CaregiverInputPanel } from "./caregiver-input-panel";
 import { DailyTasksPreview } from "./daily-tasks-preview";
 import { PatientAvatar } from "./patient-avatar";
 import { UpcomingEventPreview } from "./upcoming-event-preview";
@@ -57,17 +57,12 @@ export function PatientCard({
           <UpcomingEventPreview items={timeline} />
           <DailyTasksPreview tasks={tasks} resolveAssigneeName={resolveAssigneeName} />
           <CareProfileSummary profile={patient.careProfile} compact />
+          <CaregiverInputPanel patient={patient} />
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div>
             <Button variant="outline" className="gap-2" onClick={onEdit}>
               <Pencil className="size-4" />
               Edit profile
-            </Button>
-            <Button asChild variant="soft" className="gap-2">
-              <Link href={`/capture?patientId=${encodeURIComponent(patient.id)}&patientName=${encodeURIComponent(patient.name)}`}>
-                <Plus className="size-4" />
-                New instruction
-              </Link>
             </Button>
           </div>
         </CardContent>

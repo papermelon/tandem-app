@@ -55,7 +55,7 @@ function senderNameFromTelegramUser(user?: { first_name?: string; last_name?: st
   return name || user?.username || "Telegram user";
 }
 
-function itemRowsFromExtraction(captureId: string, result: ExtractionResult) {
+function itemRowsFromExtraction(captureId: string, result: ExtractionResult, careCircleId: string) {
   const now = new Date().toISOString();
   const rows: Array<{
     id: string;
@@ -75,7 +75,7 @@ function itemRowsFromExtraction(captureId: string, result: ExtractionResult) {
     {
       id: makeId("item"),
       capture_event_id: captureId,
-      care_circle_id: CARE_CIRCLE_ID,
+      care_circle_id: careCircleId,
       item_type: "document",
       title: result.document_type || "Care document",
       summary: result.plain_english_summary,
@@ -95,7 +95,7 @@ function itemRowsFromExtraction(captureId: string, result: ExtractionResult) {
     rows.push({
       id: makeId("item"),
       capture_event_id: captureId,
-      care_circle_id: CARE_CIRCLE_ID,
+      care_circle_id: careCircleId,
       item_type: "medication",
       title: "Medication and care items to review",
       summary: result.medications_or_care_items.join(", "),
@@ -111,7 +111,7 @@ function itemRowsFromExtraction(captureId: string, result: ExtractionResult) {
     rows.push({
       id: makeId("item"),
       capture_event_id: captureId,
-      care_circle_id: CARE_CIRCLE_ID,
+      care_circle_id: careCircleId,
       item_type: category === "appointment" ? "appointment" : "task",
       title: task.title,
       summary: result.family_update_message,
@@ -167,15 +167,17 @@ export async function createCaptureFromExtraction(input: {
   originalFileMimeType?: string;
   rawText?: string;
   extractedText?: string;
+  careCircleId?: string;
 }) {
   const supabase = createSupabaseAdmin();
   if (!supabase) throw new Error("Supabase server environment is not configured.");
 
   const now = new Date().toISOString();
   const captureId = makeId("cap");
+  const careCircleId = input.careCircleId ?? CARE_CIRCLE_ID;
   const captureRow = dropUndefined({
     id: captureId,
-    care_circle_id: CARE_CIRCLE_ID,
+    care_circle_id: careCircleId,
     platform: input.platform,
     source_type: input.sourceType,
     status: "pending_review",
@@ -196,7 +198,7 @@ export async function createCaptureFromExtraction(input: {
   const captureResult = await supabase.from("capture_events").insert(captureRow);
   if (captureResult.error) throw captureResult.error;
 
-  const itemResult = await supabase.from("extracted_items").insert(itemRowsFromExtraction(captureId, input.result));
+  const itemResult = await supabase.from("extracted_items").insert(itemRowsFromExtraction(captureId, input.result, careCircleId));
   if (itemResult.error) throw itemResult.error;
 
   try {
@@ -227,6 +229,58 @@ export async function listCaptureEvents(status = "pending_review"): Promise<Capt
 
   if (captureIds.length > 0) {
     const itemsResult = await supabase.from("extracted_items").select("*").in("capture_event_id", captureIds);
+    if (itemsResult.error) throw itemsResult.error;
+
+    itemsByCaptureId = ((itemsResult.data ?? []) as ExtractedItemRow[]).reduce((items, row) => {
+      const rows = items.get(row.capture_event_id) ?? [];
+      rows.push(row);
+      items.set(row.capture_event_id, rows);
+      return items;
+    }, new Map<string, ExtractedItemRow[]>());
+  }
+
+  return Promise.all(
+    captureRows.map(async (row) => ({
+      id: row.id,
+      platform: row.platform,
+      sourceType: row.source_type,
+      senderName: row.sender_name ?? undefined,
+      platformSenderId: row.platform_sender_id ?? undefined,
+      platformMessageId: row.platform_message_id ?? undefined,
+      originalFilePath: row.original_file_path ?? undefined,
+      originalFileUrl: await signedUrl(row.original_file_path),
+      originalFileName: row.original_file_name ?? undefined,
+      originalFileMimeType: row.original_file_mime_type ?? undefined,
+      rawText: row.raw_text ?? undefined,
+      extractedText: row.extracted_text ?? undefined,
+      aiSummary: row.ai_summary ?? undefined,
+      status: row.status,
+      extractionJson: row.extraction_json ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      items: (itemsByCaptureId.get(row.id) ?? []).map(mapExtractedItem)
+    }))
+  );
+}
+
+export async function listCaptureEventsByIds(captureIds: string[]): Promise<CaptureEvent[]> {
+  const supabase = createSupabaseAdmin();
+  if (!supabase || captureIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("capture_events")
+    .select("*")
+    .in("id", captureIds)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const captureRows = (data ?? []) as CaptureRow[];
+  const ids = captureRows.map((row) => row.id);
+  let itemsByCaptureId = new Map<string, ExtractedItemRow[]>();
+
+  if (ids.length > 0) {
+    const itemsResult = await supabase.from("extracted_items").select("*").in("capture_event_id", ids);
     if (itemsResult.error) throw itemsResult.error;
 
     itemsByCaptureId = ((itemsResult.data ?? []) as ExtractedItemRow[]).reduce((items, row) => {
@@ -293,12 +347,16 @@ export async function approveCapture(captureId: string) {
   const documentId = makeId("doc");
   const timelineId = makeId("tl");
   const captureRow = capture as CaptureRow;
+  const careCircleId = (capture as { care_circle_id?: string }).care_circle_id ?? CARE_CIRCLE_ID;
+  const circleResult = await supabase.from("care_circles").select("created_by").eq("id", careCircleId).maybeSingle();
+  if (circleResult.error) throw circleResult.error;
+  const authorId = circleResult.data?.created_by ?? DEFAULT_AUTHOR_ID;
   const pendingItems = (captureRow.extracted_items ?? []).filter((item) => item.status === "pending");
   const taskItems = pendingItems.filter((item) => item.item_type === "task" || item.item_type === "appointment");
 
   const tasks = taskItems.map((item) => ({
     id: makeId("task"),
-    care_circle_id: CARE_CIRCLE_ID,
+    care_circle_id: careCircleId,
     title: item.title,
     category: item.category ?? "admin",
     assignee_id: item.assigned_to_id,
@@ -314,11 +372,11 @@ export async function approveCapture(captureId: string) {
 
   const document = {
     id: documentId,
-    care_circle_id: CARE_CIRCLE_ID,
+    care_circle_id: careCircleId,
     document_type: result.document_type || "Care document",
     title: result.document_type || capture.original_file_name || "Care document",
     summary: result.plain_english_summary,
-    uploaded_by_id: DEFAULT_AUTHOR_ID,
+    uploaded_by_id: authorId,
     uploaded_at: now,
     storage_path: capture.original_file_path,
     important_dates: result.important_dates ?? [],
@@ -329,11 +387,11 @@ export async function approveCapture(captureId: string) {
 
   const timeline = {
     id: timelineId,
-    care_circle_id: CARE_CIRCLE_ID,
+    care_circle_id: careCircleId,
     type: "document",
     title: `${document.document_type} saved from ${capture.platform}`,
     description: result.family_update_message || result.plain_english_summary,
-    author_id: DEFAULT_AUTHOR_ID,
+    author_id: authorId,
     timestamp: now,
     linked_task_ids: tasks.map((task) => task.id),
     linked_record_id: documentId,

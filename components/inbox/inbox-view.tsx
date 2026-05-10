@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronUp, ExternalLink, FileText, ImageIcon, Inbox, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
@@ -25,6 +26,8 @@ const categories: TaskCategory[] = ["appointment", "transport", "medication", "a
 const priorities: TaskPriority[] = ["low", "medium", "high"];
 
 export function InboxView() {
+  const searchParams = useSearchParams();
+  const focusedCaptureId = searchParams?.get("capture") ?? null;
   const { members, tasks } = useCareData();
   const [captures, setCaptures] = React.useState<CaptureEvent[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -33,7 +36,10 @@ export function InboxView() {
 
   const loadCaptures = React.useCallback(async () => {
     try {
-      const response = await fetch("/api/captures?status=pending_review", { cache: "no-store" });
+      const path = focusedCaptureId
+        ? `/api/captures?capture=${encodeURIComponent(focusedCaptureId)}`
+        : "/api/captures?status=pending_review";
+      const response = await fetch(path, { cache: "no-store" });
       const payload = (await response.json()) as CapturesPayload;
       setCaptures(payload.captures ?? []);
       setError(payload.error ?? null);
@@ -42,13 +48,20 @@ export function InboxView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [focusedCaptureId]);
 
   React.useEffect(() => {
     void loadCaptures();
     const interval = window.setInterval(() => void loadCaptures(), 5000);
     return () => window.clearInterval(interval);
   }, [loadCaptures]);
+
+  React.useEffect(() => {
+    if (!focusedCaptureId || captures.length === 0) return;
+    window.requestAnimationFrame(() => {
+      document.getElementById(focusedCaptureId)?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, [captures.length, focusedCaptureId]);
 
   async function approveCapture(captureId: string) {
     setBusyId(captureId);
@@ -88,7 +101,7 @@ export function InboxView() {
       <PageHeading
         eyebrow="Inbox"
         title="Review forwarded care items"
-        description="Forward images, screenshots, PDFs, or messages to the Tandem Telegram bot. Nothing becomes family memory until it is reviewed here."
+        description="Review care items from web uploads, voice notes, and Telegram forwards before they become shared family records."
         icon={Inbox}
         badge="Pending review first"
       />
@@ -137,6 +150,7 @@ export function InboxView() {
               members={members}
               tasks={tasks}
               busy={busyId === capture.id}
+              focused={capture.id === focusedCaptureId}
               onApprove={() => void approveCapture(capture.id)}
               onIgnore={() => void ignoreCapture(capture.id)}
               onUpdateItem={(item) => updateItem(capture.id, item)}
@@ -153,6 +167,7 @@ function CaptureCard({
   members,
   tasks,
   busy,
+  focused,
   onApprove,
   onIgnore,
   onUpdateItem
@@ -161,6 +176,7 @@ function CaptureCard({
   members: FamilyMember[];
   tasks: Task[];
   busy: boolean;
+  focused: boolean;
   onApprove: () => void;
   onIgnore: () => void;
   onUpdateItem: (item: ExtractedItem) => void;
@@ -168,7 +184,7 @@ function CaptureCard({
   const pendingItems = capture.items.filter((item) => item.status === "pending");
 
   return (
-    <Card id={capture.id} className="overflow-hidden">
+    <Card id={capture.id} className={`overflow-hidden scroll-mt-6 ${focused ? "ring-2 ring-primary/40" : ""}`}>
       <CardHeader className="border-b bg-white/60">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
