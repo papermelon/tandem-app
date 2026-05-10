@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ClipboardList, Home, Inbox, LineChart, MessageCircle, Mic, MoreHorizontal, Sparkles, Upload } from "lucide-react";
+import { Bell, ClipboardList, Home, Inbox, LineChart, MessageCircle, Mic, MoreHorizontal, Stethoscope, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { useCareData } from "@/components/providers/care-data-provider";
@@ -12,7 +12,7 @@ const primaryNav = [
   { href: "/dashboard", label: "Hub", icon: Home },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/tasks", label: "Tasks", icon: ClipboardList },
-  { href: "/handover", label: "Handover", icon: Sparkles },
+  { href: "/handover", label: "Health", icon: Stethoscope },
   { href: "/settings", label: "More", icon: MoreHorizontal }
 ];
 

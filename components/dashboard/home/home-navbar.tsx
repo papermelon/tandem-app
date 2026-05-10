@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Plane, Settings } from "lucide-react";
+import { Home, Settings, Stethoscope } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/", label: "Home", icon: Home, match: (p: string) => p === "/" || p.startsWith("/home") },
-  { href: "/handover", label: "Handover", icon: Plane, match: (p: string) => p.startsWith("/handover") },
+  { href: "/handover", label: "Health", icon: Stethoscope, match: (p: string) => p.startsWith("/handover") },
   { href: "/settings", label: "Settings", icon: Settings, match: (p: string) => p.startsWith("/settings") },
 ];
 

@@ -18,9 +18,10 @@ export function GenerateHandoverQR() {
     data.members.find((member) => member.isDefaultCaregiver)?.id ?? data.members[0]?.id ?? "rachel";
   const activeSession = (data.handoverSessions ?? []).find(
     (session) =>
-      session.status === "pending" ||
-      session.status === "in-progress" ||
-      session.status === "completed"
+      !session.archivedAt &&
+      (session.status === "pending" ||
+        session.status === "in-progress" ||
+        session.status === "completed")
   );
 
   const [generating, setGenerating] = React.useState(false);
