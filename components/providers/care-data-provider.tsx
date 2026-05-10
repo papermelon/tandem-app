@@ -3,7 +3,8 @@
 import * as React from "react";
 
 import { createSeedData } from "@/lib/seed-data";
-import type { AppData, DocumentRecord, FamilyMember, Handover, Task, TaskCategory, TimelineItem } from "@/lib/types";
+import { CARE_DEMO_STORAGE_KEY, shouldForceDemoData } from "@/lib/demo-mode";
+import type { AppData, CareRecipient, DocumentRecord, FamilyMember, Handover, Task, TaskCategory, TimelineItem } from "@/lib/types";
 
 type CareDataContextValue = AppData & {
   mockMode: boolean;
@@ -12,6 +13,7 @@ type CareDataContextValue = AppData & {
   addTimelineItem: (item: Omit<TimelineItem, "id" | "timestamp"> & { timestamp?: string }) => TimelineItem;
   addDocument: (document: Omit<DocumentRecord, "id" | "uploadedAt"> & { uploadedAt?: string }) => DocumentRecord;
   addHandover: (handover: Omit<Handover, "id" | "createdAt"> & { createdAt?: string }) => Handover;
+  updateRecipient: (recipientId: string, patch: Partial<CareRecipient>) => void;
   resetDemo: () => void;
   memberName: (id?: string) => string;
   memberIdByName: (name?: string) => string | undefined;
@@ -21,7 +23,6 @@ type CareDataContextValue = AppData & {
   ) => void;
 };
 
-const STORAGE_KEY = "tandem-demo-state-v1";
 const CareDataContext = React.createContext<CareDataContextValue | null>(null);
 
 function makeId(prefix: string) {
@@ -36,7 +37,7 @@ function readStoredState() {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(CARE_DEMO_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as AppData) : null;
   } catch {
     return null;
@@ -60,6 +61,12 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
   const [mockMode, setMockMode] = React.useState(true);
 
   React.useEffect(() => {
+    if (shouldForceDemoData()) {
+      setData(readStoredState() ?? createSeedData());
+      setMockMode(true);
+      return;
+    }
+
     fetch("/api/demo-data")
       .then((response) => response.json())
       .then((payload: { data?: AppData; mockMode?: boolean }) => {
@@ -68,7 +75,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
           const isMockMode = Boolean(payload.mockMode);
           setMockMode(isMockMode);
           if (!isMockMode) {
-            window.localStorage.removeItem(STORAGE_KEY);
+            window.localStorage.removeItem(CARE_DEMO_STORAGE_KEY);
           }
           return;
         }
@@ -89,7 +96,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     if (!data || !mockMode) return;
 
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      window.localStorage.setItem(CARE_DEMO_STORAGE_KEY, JSON.stringify(data));
     } catch {
       // Local storage is a convenience for the demo, not a hard dependency.
     }
@@ -210,9 +217,30 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     [mockMode]
   );
 
+  const updateRecipient = React.useCallback(
+    (recipientId: string, patch: Partial<CareRecipient>) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              recipient:
+                current.recipient.id === recipientId
+                  ? { ...current.recipient, ...patch }
+                  : current.recipient
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/data/care-recipients/${recipientId}`, { patch }, "PATCH");
+      }
+    },
+    [mockMode]
+  );
+
   const resetDemo = React.useCallback(() => {
     const seed = createSeedData();
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(CARE_DEMO_STORAGE_KEY);
     setData(seed);
     setMockMode(true);
   }, []);
@@ -226,12 +254,13 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       addTimelineItem,
       addDocument,
       addHandover,
+      updateRecipient,
       resetDemo,
       memberName,
       memberIdByName,
       updateMemberPreferences
     }),
-    [addDocument, addHandover, addTasks, addTimelineItem, data, memberIdByName, memberName, mockMode, resetDemo, updateMemberPreferences, updateTask]
+    [addDocument, addHandover, addTasks, addTimelineItem, data, memberIdByName, memberName, mockMode, resetDemo, updateMemberPreferences, updateRecipient, updateTask]
   );
 
   if (!data) {
@@ -242,7 +271,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
             T
           </div>
           <div className="mt-4 text-lg font-bold">Loading Tandem</div>
-          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing Mum care circle.</p>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing your care circle.</p>
         </div>
       </div>
     );

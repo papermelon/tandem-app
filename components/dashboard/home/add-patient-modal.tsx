@@ -45,7 +45,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/50 sm:place-items-center"
+      className="fixed inset-0 z-[120] grid items-end justify-items-center bg-black/50 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="New care recipient"
@@ -70,7 +70,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
         <form className="mt-4 space-y-3" onSubmit={submit}>
           <label className="block">
             <span className="text-xs font-semibold text-muted-foreground">Name</span>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ahma" required />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ah Muay" required />
           </label>
           <label className="block">
             <span className="text-xs font-semibold text-muted-foreground">Age</span>

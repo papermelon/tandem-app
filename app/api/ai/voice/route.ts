@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         file: audioFile,
         model: OPENAI_TRANSCRIBE_MODEL,
         prompt:
-          "This is a Singapore family caregiving voice note about Mum, rehab, polyclinic, SGH, HDB EASE, AIC grants, transport, helpers, medication reminders, and family task handover."
+          "This is a Singapore family caregiving voice note about Ah Muay, Rachel's mum, rehab, polyclinic, SGH, HDB EASE, AIC grants, transport, helpers, medication reminders, and family task handover."
       });
       transcript = transcription.text;
     }
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Family members: Rachel, Ming, Lina. Care recipient: Mum, 78, mild dementia, recent fall. ${
+          content: `Family members: Rachel, Ming, Lina. Care recipient: Ah Muay, Rachel's mum, 78, mild dementia, recent fall. ${
             text.trim() && file instanceof File ? `Extra typed context: ${text.trim()}\n` : ""
           }Transcript:\n${transcript}`
         }

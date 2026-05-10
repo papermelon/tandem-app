@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Bell, ClipboardList, Home, Inbox, LineChart, MessageCircle, Mic, MoreHorizontal, Sparkles, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { useCareData } from "@/components/providers/care-data-provider";
 import { cn } from "@/lib/utils";
 
 const primaryNav = [
@@ -24,9 +25,11 @@ const secondaryNav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { recipient } = useCareData();
 
   if (
     pathname?.startsWith("/wrapped") ||
+    pathname?.startsWith("/auth") ||
     pathname === "/" ||
     pathname?.startsWith("/home") ||
     pathname?.startsWith("/handover") ||
@@ -76,7 +79,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="grid size-10 place-items-center rounded-2xl bg-primary font-bold text-primary-foreground">T</div>
               <div>
                 <div className="text-base font-bold">Tandem</div>
-                <div className="text-xs text-muted-foreground">Mum care circle</div>
+                <div className="text-xs text-muted-foreground">{recipient.name}'s care circle</div>
               </div>
             </Link>
             <button className="grid size-10 place-items-center rounded-full border bg-white/80 text-muted-foreground shadow-sm" aria-label="Notifications">

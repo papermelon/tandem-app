@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Activity, ArrowRight, CalendarDays, FileText, HeartPulse, LineChart, ShieldCheck, Sparkles } from "lucide-react";
 
 import { MemberAvatar } from "@/components/shared/member-avatar";
+import { CareProfileSummary } from "@/components/shared/care-profile-summary";
 import { PageHeading } from "@/components/shared/page-heading";
 import { SignalPill } from "@/components/shared/signal-pill";
 import { TaskCard } from "@/components/shared/task-card";
@@ -90,6 +91,14 @@ export function DashboardView() {
                 <div className="mt-2 text-xs text-muted-foreground">{formatTime(signal.timestamp)}</div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mt-4">
+        <Card>
+          <CardContent className="p-4">
+            <CareProfileSummary profile={recipient.careProfile} />
           </CardContent>
         </Card>
       </section>

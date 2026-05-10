@@ -36,7 +36,7 @@ export function createSeedData(): AppData {
       status: "unclaimed",
       priority: "high",
       linkedTimelineId: "tl-rehab",
-      notes: "Appointment starts at 10:30am. Mum needs help getting from the taxi drop-off to rehab."
+      notes: "Appointment starts at 10:30am. Ah Muay needs help getting from the taxi drop-off to rehab."
     },
     {
       id: "task-med-refill",
@@ -158,7 +158,7 @@ export function createSeedData(): AppData {
       id: "tl-no-movement",
       type: "care signal",
       title: "No usual morning movement detected by 10:30am",
-      description: "Kitchen and hallway sensors were quiet longer than Mum's usual routine. Rachel completed a video check-in.",
+      description: "Kitchen and hallway sensors were quiet longer than Ah Muay's usual routine. Rachel completed a video check-in.",
       authorId: "rachel",
       timestamp: offsetDate(0, 10, 30),
       severity: "alert",
@@ -183,8 +183,8 @@ export function createSeedData(): AppData {
     {
       id: "tl-voice",
       type: "voice update",
-      title: "Voice note: Mum walked slower today",
-      description: "Rachel noticed Mum taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.",
+      title: "Voice note: Ah Muay walked slower today",
+      description: "Rachel noticed Ah Muay taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.",
       authorId: "rachel",
       timestamp: offsetDate(-2, 14, 5)
     },
@@ -268,7 +268,7 @@ export function createSeedData(): AppData {
       id: "handover-demo",
       createdAt: offsetDate(-1, 22, 0),
       rangeLabel: "Next 7 days",
-      currentSituation: "Mum is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.",
+      currentSituation: "Ah Muay is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.",
       upcomingAppointments: ["SGH rehab tomorrow at 10:30am", "Polyclinic review to be booked"],
       activeTasks: ["Confirm transport", "Refill medication", "Upload contractor quote"],
       medicationReminders: ["Medication refill due in 2 days", "Night reminder coverage needs helper roster confirmation"],
@@ -293,11 +293,42 @@ export function createSeedData(): AppData {
     members,
     recipient: {
       id: "mum",
-      name: "Mum",
+      name: "Ah Muay",
       age: 78,
       context: "Mild dementia, recent fall, rehab follow-up",
       address: "Ang Mo Kio HDB flat",
-      careCircleId: "circle-mum"
+      careCircleId: "circle-mum",
+      relationship: "Mother",
+      country: "Singapore",
+      careProfile: {
+        summary: "Shared reference for meals, mobility, medication reminders, and warning signs.",
+        updatedAt: "today",
+        sections: [
+          {
+            label: "Food texture",
+            value: "Soft foods preferred",
+            notes: [
+              "Avoid hard or crunchy food unless someone is supervising.",
+              "Cut meat and fruit into small pieces."
+            ]
+          },
+          {
+            label: "Medication",
+            value: "Donepezil and blood pressure medication",
+            notes: ["Refill due this week.", "Check the drawer after the night reminder."]
+          },
+          {
+            label: "Mobility",
+            value: "Walking stick outside",
+            notes: ["Needs help from taxi drop-off to rehab.", "Hold her arm on stairs or wet floors."]
+          },
+          {
+            label: "Watch for",
+            value: "Dizziness, missed meals, new confusion",
+            notes: ["Record symptoms in the timeline for the next doctor review."]
+          }
+        ]
+      }
     },
     tasks,
     timeline,

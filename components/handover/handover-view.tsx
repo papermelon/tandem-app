@@ -22,7 +22,7 @@ type HandoverResult = {
   suggested_next_actions: string[];
 };
 
-const options = ["Next 3 days", "Next 7 days", "Custom range", "I'm travelling", "Someone else is covering Mum"];
+const options = ["Next 3 days", "Next 7 days", "Custom range", "I'm travelling", "Someone else is covering Ah Muay"];
 
 export function HandoverView() {
   const data = useCareData();

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         },
         {
           role: "user",
-          content: `Family: Rachel, Ming, Lina. Care recipient: Mum, 78, mild dementia, recent fall. Notes:\n${notes}`
+          content: `Family: Rachel, Ming, Lina. Care recipient: Ah Muay, Rachel's mum, 78, mild dementia, recent fall. Notes:\n${notes}`
         }
       ]
     });

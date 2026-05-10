@@ -11,16 +11,65 @@ on conflict (id) do update set
   is_default_caregiver = excluded.is_default_caregiver;
 
 insert into public.care_circles (id, name, created_by)
-values ('circle-mum', 'Mum care circle', 'rachel')
+values ('circle-mum', 'Ah Muay care circle', 'rachel')
 on conflict (id) do update set name = excluded.name;
 
-insert into public.care_recipients (id, care_circle_id, name, age, context, address)
-values ('mum', 'circle-mum', 'Mum', 78, 'Mild dementia, recent fall, rehab follow-up', 'Ang Mo Kio HDB flat')
+insert into public.care_recipients (id, care_circle_id, name, age, context, address, relationship, country, care_profile)
+values (
+  'mum',
+  'circle-mum',
+  'Ah Muay',
+  78,
+  'Mild dementia, recent fall, rehab follow-up',
+  'Ang Mo Kio HDB flat',
+  'Mother',
+  'Singapore',
+  '{
+    "summary": "Shared reference for meals, mobility, medication reminders, and warning signs.",
+    "updatedAt": "today",
+    "sections": [
+      {
+        "label": "Food texture",
+        "value": "Soft foods preferred",
+        "notes": [
+          "Avoid hard or crunchy food unless someone is supervising.",
+          "Cut meat and fruit into small pieces."
+        ]
+      },
+      {
+        "label": "Medication",
+        "value": "Donepezil and blood pressure medication",
+        "notes": [
+          "Refill due this week.",
+          "Check the drawer after the night reminder."
+        ]
+      },
+      {
+        "label": "Mobility",
+        "value": "Walking stick outside",
+        "notes": [
+          "Needs help from taxi drop-off to rehab.",
+          "Hold her arm on stairs or wet floors."
+        ]
+      },
+      {
+        "label": "Watch for",
+        "value": "Dizziness, missed meals, new confusion",
+        "notes": [
+          "Record symptoms in the timeline for the next doctor review."
+        ]
+      }
+    ]
+  }'::jsonb
+)
 on conflict (id) do update set
   name = excluded.name,
   age = excluded.age,
   context = excluded.context,
-  address = excluded.address;
+  address = excluded.address,
+  relationship = excluded.relationship,
+  country = excluded.country,
+  care_profile = excluded.care_profile;
 
 insert into public.circle_members (care_circle_id, user_id, member_role)
 values
@@ -62,16 +111,16 @@ values
   ('tl-rehab', 'circle-mum', 'appointment', 'Rehab appointment tomorrow, 10:30am', 'SGH outpatient rehab confirmed. Please arrive 20 minutes early for registration.', 'rachel', now() - interval '1 day', array['task-rehab-transport'], null, null),
   ('tl-medication', 'circle-mum', 'task', 'Medication refill due in 2 days', 'Pharmacy says donepezil stock is available. Rachel has the prescription photo.', 'rachel', now() - interval '1 day' + interval '2 hours', array['task-med-refill'], null, null),
   ('tl-hdb', 'circle-mum', 'document', 'HDB EASE application letter uploaded', 'Letter confirms request for grab bars and anti-slip bathroom treatment. Contractor quote still needed.', 'lina', now() - interval '2 days', array['task-hdb-ease','task-grab-bars'], 'doc-hdb-ease', null),
-  ('tl-no-movement', 'circle-mum', 'care signal', 'No usual morning movement detected by 10:30am', 'Kitchen and hallway sensors were quiet longer than Mum''s usual routine. Rachel completed a video check-in.', 'rachel', date_trunc('day', now()) + interval '10 hours 30 minutes', array['task-morning-check'], null, 'alert'),
+  ('tl-no-movement', 'circle-mum', 'care signal', 'No usual morning movement detected by 10:30am', 'Kitchen and hallway sensors were quiet longer than Ah Muay''s usual routine. Rachel completed a video check-in.', 'rachel', date_trunc('day', now()) + interval '10 hours 30 minutes', array['task-morning-check'], null, 'alert'),
   ('tl-doctor-note', 'circle-mum', 'note', 'Doctor asked us to watch for dizziness', 'After the recent fall, SGH doctor said to note dizzy spells, missed meals, and new confusion.', 'rachel', now() - interval '3 days', '{}', null, null),
   ('tl-meeting', 'circle-mum', 'meeting summary', 'Family call summary', 'Agreed to split transport, admin, and medication reminders more clearly for the next two weeks.', 'ming', now() - interval '4 days', '{}', null, null),
-  ('tl-voice', 'circle-mum', 'voice update', 'Voice note: Mum walked slower today', 'Rachel noticed Mum taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.', 'rachel', now() - interval '2 days' + interval '4 hours', '{}', null, null),
+  ('tl-voice', 'circle-mum', 'voice update', 'Voice note: Ah Muay walked slower today', 'Rachel noticed Ah Muay taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.', 'rachel', now() - interval '2 days' + interval '4 hours', '{}', null, null),
   ('tl-aic', 'circle-mum', 'document', 'AIC grant letter received', 'Letter requests income documents and a caregiver declaration before the next review.', 'lina', now() - interval '5 days', array['task-aic-call'], 'doc-aic-letter', null)
 on conflict (id) do update set description = excluded.description;
 
 insert into public.tasks (id, care_circle_id, title, category, assignee_id, due_date, status, priority, linked_record_id, linked_timeline_id, notes)
 values
-  ('task-rehab-transport', 'circle-mum', 'Confirm transport for SGH rehab appointment', 'transport', null, now() + interval '1 day', 'unclaimed', 'high', null, 'tl-rehab', 'Appointment starts at 10:30am. Mum needs help getting from the taxi drop-off to rehab.'),
+  ('task-rehab-transport', 'circle-mum', 'Confirm transport for SGH rehab appointment', 'transport', null, now() + interval '1 day', 'unclaimed', 'high', null, 'tl-rehab', 'Appointment starts at 10:30am. Ah Muay needs help getting from the taxi drop-off to rehab.'),
   ('task-med-refill', 'circle-mum', 'Refill donepezil and blood pressure medication', 'medication', 'rachel', now() + interval '2 days', 'claimed', 'medium', null, 'tl-medication', null),
   ('task-hdb-ease', 'circle-mum', 'Upload HDB EASE contractor quote', 'admin', null, now() + interval '3 days', 'unclaimed', 'medium', 'doc-hdb-ease', null, null),
   ('task-aic-call', 'circle-mum', 'Call AIC about interim caregiving grant eligibility', 'admin', 'lina', now() + interval '4 days', 'claimed', 'medium', 'doc-aic-letter', null, null),
@@ -113,7 +162,7 @@ values (
   'handover-demo',
   'circle-mum',
   'Next 7 days',
-  'Mum is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.',
+  'Ah Muay is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.',
   array['SGH rehab tomorrow at 10:30am', 'Polyclinic review to be booked'],
   array['Confirm transport', 'Refill medication', 'Upload contractor quote'],
   array['Medication refill due in 2 days', 'Night reminder coverage needs helper roster confirmation'],

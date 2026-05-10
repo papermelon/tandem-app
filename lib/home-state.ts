@@ -5,7 +5,7 @@ import * as React from "react";
 import { mockCaregiver, mockPatients } from "@/lib/home-mock-data";
 import type { CaregiverProfile, CareRecipient } from "@/lib/types";
 
-const STORAGE_KEY = "tandem-home-state-v1";
+export const HOME_STORAGE_KEY = "tandem-home-state-v1";
 
 export type HomeState = {
   caregiver: CaregiverProfile;
@@ -19,14 +19,56 @@ const defaultState: HomeState = {
   selectedPatientId: mockPatients[0]?.id,
 };
 
+function normalizePatient(patient: CareRecipient): CareRecipient {
+  if (patient.careProfile) return patient;
+
+  const seeded = mockPatients.find(
+    (mock) => mock.id === patient.id || mock.name.toLowerCase() === patient.name.toLowerCase(),
+  );
+
+  return seeded?.careProfile ? { ...patient, careProfile: seeded.careProfile } : patient;
+}
+
+function normalizeState(state: HomeState): HomeState {
+  return {
+    ...state,
+    patients: state.patients.map(normalizePatient),
+  };
+}
+
+export function createExistingDemoHomeState(caregiverName = "Rachel"): HomeState {
+  return {
+    caregiver: { ...mockCaregiver, name: caregiverName },
+    patients: mockPatients,
+    selectedPatientId: mockPatients[0]?.id,
+  };
+}
+
+export function createFreshHomeState(caregiverName: string): HomeState {
+  return {
+    caregiver: {
+      ...mockCaregiver,
+      id: "caregiver-new",
+      name: caregiverName,
+    },
+    patients: [],
+    selectedPatientId: undefined,
+  };
+}
+
+export function writeHomeStateSnapshot(state: HomeState) {
+  if (typeof window === "undefined") return;
+  write(state);
+}
+
 function read(): HomeState {
   if (typeof window === "undefined") return defaultState;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(HOME_STORAGE_KEY);
     if (!raw) return defaultState;
     const parsed = JSON.parse(raw) as HomeState;
     if (!parsed.caregiver || !Array.isArray(parsed.patients)) return defaultState;
-    return parsed;
+    return normalizeState(parsed);
   } catch {
     return defaultState;
   }
@@ -35,7 +77,7 @@ function read(): HomeState {
 function write(state: HomeState) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(HOME_STORAGE_KEY, JSON.stringify(state));
   } catch {
     // best-effort; localStorage may be disabled in private mode
   }
@@ -110,6 +152,20 @@ export function useHomeState() {
     [],
   );
 
+  const removePatient = React.useCallback((id: string) => {
+    setState((s) => {
+      const patients = s.patients.filter((p) => p.id !== id);
+      const selectedPatientId =
+        s.selectedPatientId === id ? patients[0]?.id : s.selectedPatientId;
+
+      return {
+        ...s,
+        patients,
+        selectedPatientId,
+      };
+    });
+  }, []);
+
   const selectPatient = React.useCallback((id: string) => {
     setState((s) => ({ ...s, selectedPatientId: id }));
   }, []);
@@ -122,6 +178,7 @@ export function useHomeState() {
     addPatient,
     importPatient,
     updatePatient,
+    removePatient,
     selectPatient,
   };
 }

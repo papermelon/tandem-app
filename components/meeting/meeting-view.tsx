@@ -14,7 +14,7 @@ import { normalizeDueDate } from "@/lib/task-utils";
 import type { MeetingResult } from "@/lib/types";
 
 const sampleNotes =
-  "Rachel: I can keep doing medication reminders but transport is hard this week. Ming: I can take one morning if I know the appointment details early. Lina: I can handle HDB EASE and AIC paperwork but need the latest doctor memo. Decision: Ming checks rehab transport tomorrow, Lina follows up on contractor quote, Rachel updates medication list. Open question: who is backup if Mum refuses to leave for rehab?";
+  "Rachel: I can keep doing medication reminders but transport is hard this week. Ming: I can take one morning if I know the appointment details early. Lina: I can handle HDB EASE and AIC paperwork but need the latest doctor memo. Decision: Ming checks rehab transport tomorrow, Lina follows up on contractor quote, Rachel updates medication list. Open question: who is backup if Ah Muay refuses to leave for rehab?";
 
 export function MeetingView() {
   const { addTasks, addTimelineItem, memberIdByName } = useCareData();

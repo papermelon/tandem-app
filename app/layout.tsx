@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 
 import "@/app/globals.css";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { AppShell } from "@/components/app-shell";
 import { HomeNavbar } from "@/components/dashboard/home/home-navbar";
 import { CareDataProvider } from "@/components/providers/care-data-provider";
@@ -21,10 +22,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <CareDataProvider>
-          <AppShell>{children}</AppShell>
-          <HomeNavbar />
-        </CareDataProvider>
+        <AuthProvider>
+          <CareDataProvider>
+            <AppShell>{children}</AppShell>
+            <HomeNavbar />
+          </CareDataProvider>
+        </AuthProvider>
       </body>
     </html>
   );

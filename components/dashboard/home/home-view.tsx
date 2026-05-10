@@ -11,23 +11,28 @@ import type { CareRecipient } from "@/lib/types";
 
 import { AddPatientModal } from "./add-patient-modal";
 import { ConfirmImportModal } from "./confirm-import-modal";
+import { EditPatientModal } from "./edit-patient-modal";
 import { PatientCard } from "./patient-card";
 import { PatientSelector } from "./patient-selector";
 import { QRScannerModal } from "./qr-scanner-modal";
 
 export function HomeView() {
-  const { tasks, timeline, memberName } = useCareData();
+  const { recipient, tasks, timeline, memberName, mockMode, updateRecipient } = useCareData();
   const home = useHomeState();
 
-  const [entered, setEntered] = React.useState(false);
   const [stage, setStage] = React.useState<"selector" | "dashboard">("selector");
   const [addOpen, setAddOpen] = React.useState(false);
   const [scanOpen, setScanOpen] = React.useState(false);
+  const [editingPatientId, setEditingPatientId] = React.useState<string | null>(null);
   const [scanError, setScanError] = React.useState<string | null>(null);
   const [pendingImport, setPendingImport] = React.useState<HandoverPlaintext | null>(null);
 
-  const selected = home.state.patients.find((p) => p.id === home.state.selectedPatientId);
-  const otherCount = Math.max(home.state.patients.length - 1, 0);
+  const liveProfileMode = !mockMode;
+  const patients = liveProfileMode ? [recipient] : home.state.patients;
+  const selectedPatientId = liveProfileMode ? recipient.id : home.state.selectedPatientId;
+  const selected = patients.find((p) => p.id === selectedPatientId) ?? patients[0];
+  const editingPatient = patients.find((p) => p.id === editingPatientId) ?? null;
+  const otherCount = Math.max(patients.length - 1, 0);
 
   const handleCreate = (
     draft: Pick<CareRecipient, "name" | "age" | "relationship" | "country">,
@@ -59,32 +64,11 @@ export function HomeView() {
       context: r.context ?? "",
       address: r.address ?? "",
       careCircleId: r.careCircleId,
+      careProfile: r.careProfile,
     });
     setPendingImport(null);
     setStage("dashboard");
   };
-
-  if (!entered) {
-    const hasName = Boolean(home.state.caregiver.name);
-    return (
-      <button
-        type="button"
-        onClick={() => setEntered(true)}
-        className="fixed inset-0 z-50 grid w-full place-items-center bg-gradient-to-b from-white to-primary/5 p-8 text-center"
-        aria-label="Enter Tandem"
-      >
-        <div className="flex flex-col items-center gap-4">
-          <HeartPulse className="size-14 text-primary" />
-          <div className="text-5xl font-bold tracking-tight">TANDEM</div>
-          <div className="text-sm text-muted-foreground">
-            {hasName
-              ? `Welcome back, ${home.state.caregiver.name}. Tap to continue.`
-              : "Tap to begin"}
-          </div>
-        </div>
-      </button>
-    );
-  }
 
   const onSelector = stage === "selector" || !selected;
   const showNameField = home.hydrated && !home.state.caregiver.name;
@@ -130,12 +114,16 @@ export function HomeView() {
 
       {onSelector ? (
         <PatientSelector
-          patients={home.state.patients}
-          selectedId={home.state.selectedPatientId}
-          onSelect={home.selectPatient}
+          patients={patients}
+          selectedId={selectedPatientId}
+          onSelect={(id) => {
+            if (!liveProfileMode) home.selectPatient(id);
+          }}
           onAdd={() => setAddOpen(true)}
+          onEdit={setEditingPatientId}
+          allowAdd={!liveProfileMode}
           onBeginCare={(id) => {
-            home.selectPatient(id);
+            if (!liveProfileMode) home.selectPatient(id);
             setStage("dashboard");
           }}
         />
@@ -147,6 +135,7 @@ export function HomeView() {
           otherPatientCount={otherCount}
           resolveAssigneeName={memberName}
           onAvatarChange={(dataUrl) => home.updatePatient(selected.id, { avatar: dataUrl })}
+          onEdit={() => setEditingPatientId(selected.id)}
         />
       ) : null}
 
@@ -181,6 +170,30 @@ export function HomeView() {
         payload={pendingImport}
         onCancel={() => setPendingImport(null)}
         onConfirm={confirmImport}
+      />
+
+      <EditPatientModal
+        open={Boolean(editingPatient)}
+        patient={editingPatient}
+        onClose={() => setEditingPatientId(null)}
+        onSave={(patch) => {
+          if (!editingPatient) return;
+          if (liveProfileMode) {
+            updateRecipient(editingPatient.id, patch);
+          } else {
+            home.updatePatient(editingPatient.id, patch);
+          }
+          setEditingPatientId(null);
+        }}
+        onRemove={() => {
+          if (!editingPatient) return;
+          if (liveProfileMode) return;
+          home.removePatient(editingPatient.id);
+          setEditingPatientId(null);
+          setStage("selector");
+        }}
+        canRemove={!liveProfileMode}
+        liveMode={liveProfileMode}
       />
     </div>
   );

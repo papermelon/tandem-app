@@ -61,6 +61,19 @@ export type CareRecipient = {
   relationship?: string;
   country?: string;
   avatar?: string;
+  careProfile?: CareProfile;
+};
+
+export type CareProfileSection = {
+  label: string;
+  value: string;
+  notes?: string[];
+};
+
+export type CareProfile = {
+  summary: string;
+  updatedAt?: string;
+  sections: CareProfileSection[];
 };
 
 export type CaregiverProfile = {
