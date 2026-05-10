@@ -119,7 +119,7 @@ async function loadCircleData(
   ] = await Promise.all([
     supabase
       .from("circle_members")
-      .select("users:user_id(id, name, role, avatar, phone, is_default_caregiver, category_preferences, load_capacity_pct)")
+      .select("users:user_id(id, name, role, avatar, phone, is_default_caregiver)")
       .eq("care_circle_id", careCircleId),
     supabase.from("care_recipients").select("*").eq("care_circle_id", careCircleId).limit(1).maybeSingle(),
     supabase.from("timeline_items").select("*").eq("care_circle_id", careCircleId).order("timestamp", { ascending: false }),
@@ -167,8 +167,8 @@ async function loadCircleData(
         avatar: user.avatar,
         phone: user.phone,
         isDefaultCaregiver: user.is_default_caregiver,
-        categoryPreferences: user.category_preferences ?? [],
-        loadCapacityPct: user.load_capacity_pct ?? 100
+        categoryPreferences: [],
+        loadCapacityPct: 100
       };
     }),
     recipient: {
