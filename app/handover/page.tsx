@@ -1,5 +1,5 @@
-import { HandoverView } from "@/components/handover/handover-view";
+import { HandoverPageView } from "@/components/handover/handover-page-view";
 
 export default function HandoverPage() {
-  return <HandoverView />;
+  return <HandoverPageView />;
 }

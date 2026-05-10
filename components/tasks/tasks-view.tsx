@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ClipboardList, Filter } from "lucide-react";
+import Link from "next/link";
+import { ClipboardList, Filter, Plane } from "lucide-react";
 
 import { PageHeading } from "@/components/shared/page-heading";
 import { TaskCard } from "@/components/shared/task-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { useCareData } from "@/components/providers/care-data-provider";
 import { categoryLabels, statusLabels } from "@/lib/labels";
@@ -25,7 +27,10 @@ const categoryFilters: Array<TaskCategory | "all"> = [
 ];
 
 export function TasksView() {
-  const { tasks } = useCareData();
+  const { tasks, handoverSessions } = useCareData();
+  const activeHandover = (handoverSessions ?? []).find(
+    (session) => session.status === "pending" || session.status === "in-progress"
+  );
   const [status, setStatus] = React.useState<TaskStatus | "all">("all");
   const [category, setCategory] = React.useState<TaskCategory | "all">("all");
 
@@ -48,6 +53,29 @@ export function TasksView() {
         description="Unclaimed tasks are visible so someone can pick them up when they have capacity."
         icon={ClipboardList}
       />
+
+      {activeHandover ? (
+        <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/10 p-4">
+          <div className="grid size-10 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+            <Plane className="size-5" />
+          </div>
+          <div className="flex-1">
+            <div className="font-bold">Handover in progress</div>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              The incoming caregiver hasn&apos;t finished acknowledging yet. Complete the handover before relying on
+              task assignments.
+            </p>
+            <div className="mt-2 flex gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/handover/${activeHandover.id}/share`}>View QR</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link href={`/handover/${activeHandover.id}`}>Open handover</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mb-4 rounded-2xl border border-secondary/40 bg-secondary/10 p-4">
         <div className="flex items-start gap-3">

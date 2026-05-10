@@ -58,6 +58,20 @@ export const meetingSchema = z.object({
   follow_up_reminders: z.array(z.string())
 });
 
+export const careHistoryChatSchema = z.object({
+  answer: z.string(),
+  sources: z.array(
+    z.object({
+      timeline_item_id: z.string().optional(),
+      title: z.string(),
+      date: z.string().optional(),
+      type: z.string().optional(),
+      excerpt: z.string().optional()
+    })
+  ),
+  confidence: z.enum(["high", "medium", "low", "not_found"])
+});
+
 export const voiceSchema = z.object({
   update_note: z.string(),
   suggested_task: recommendedTaskSchema,

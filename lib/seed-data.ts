@@ -1,5 +1,16 @@
 import { offsetDate } from "@/lib/date";
-import type { AppData, CareLoadCategory, CareSignal, DocumentRecord, FamilyMember, Handover, Task, TimelineItem } from "@/lib/types";
+import { defaultPermissions } from "@/lib/permissions";
+import type {
+  AppData,
+  CareLoadCategory,
+  CareSignal,
+  DocumentRecord,
+  FamilyMember,
+  Handover,
+  HandoverSession,
+  Task,
+  TimelineItem
+} from "@/lib/types";
 
 export const members: FamilyMember[] = [
   {
@@ -8,21 +19,30 @@ export const members: FamilyMember[] = [
     role: "Default caregiver",
     avatar: "R",
     phone: "+65 9000 1122",
-    isDefaultCaregiver: true
+    email: "rachel@example.com",
+    isDefaultCaregiver: true,
+    circleRole: "primary_caregiver",
+    permissions: defaultPermissions("primary_caregiver")
   },
   {
     id: "ming",
     name: "Ming",
     role: "Sibling",
     avatar: "M",
-    phone: "+65 9111 2233"
+    phone: "+65 9111 2233",
+    email: "ming@example.com",
+    circleRole: "family_member",
+    permissions: defaultPermissions("family_member")
   },
   {
     id: "lina",
     name: "Lina",
     role: "Sibling",
     avatar: "L",
-    phone: "+65 9222 3344"
+    phone: "+65 9222 3344",
+    email: "lina@example.com",
+    circleRole: "family_member",
+    permissions: { ...defaultPermissions("family_member"), create_tasks: true }
   }
 ];
 
@@ -279,6 +299,87 @@ export function createSeedData(): AppData {
     }
   ];
 
+  const handoverSessionCreated = offsetDate(0, 14, 0);
+  const handoverSessions: HandoverSession[] = [
+    {
+      id: "handover-session-demo",
+      circleId: "circle-mum",
+      careRecipientId: "mum",
+      departingCaregiverId: "rachel",
+      incomingCaregiverId: "ming",
+      briefing:
+        "Mum is doing well. Recent focus: rehab follow-up after fall, medication adherence, and HDB EASE admin. No acute issues. Appetite is steady.",
+      careHistory: [
+        {
+          id: "hh-1",
+          date: offsetDate(-1, 9, 30),
+          title: "Wound check on left forearm",
+          note: "Bruise from fall is fading. Cleaned and re-dressed.",
+          images: []
+        },
+        {
+          id: "hh-2",
+          date: offsetDate(-2, 16, 0),
+          title: "Physiotherapy session at home",
+          note: "Completed 30 minutes of mobility exercises. Tolerated well."
+        },
+        {
+          id: "hh-3",
+          date: offsetDate(-3, 11, 15),
+          title: "GP video consultation",
+          note: "Reviewed medications. No changes needed this week."
+        }
+      ],
+      upcomingAppointments: [
+        { id: "ha-1", date: offsetDate(1, 10, 30), title: "SGH rehab follow-up", time: "10:30am", location: "SGH Block 3" },
+        { id: "ha-2", date: offsetDate(4, 15, 0), title: "Polyclinic medication review", time: "3:00pm" },
+        { id: "ha-3", date: offsetDate(6, 9, 0), title: "Home physiotherapy", time: "9:00am" }
+      ],
+      otherCaregivers: [
+        { memberId: "lina", name: "Lina", loadPct: 70, phone: "+65 9222 3344", available: true },
+        { memberId: "ming", name: "Ming", loadPct: 40, phone: "+65 9111 2233", available: true }
+      ],
+      dailyChecklist: [
+        {
+          id: "hc-1",
+          label: "Morning medication routine",
+          description: "Give Donepezil 5mg and BP tablet at 8am with breakfast. Confirm she swallows fully.",
+          completed: false
+        },
+        {
+          id: "hc-2",
+          label: "Mobility exercises",
+          description: "30 minutes of gentle stretches and walking aid practice in the living room. Twice daily if she's up for it.",
+          completed: false
+        },
+        {
+          id: "hc-3",
+          label: "Wound care for forearm",
+          description: "Clean with saline, apply ointment, fresh dressing. Photo before and after for the timeline.",
+          completed: false
+        },
+        {
+          id: "hc-4",
+          label: "Evening check-in call",
+          description: "Call Rachel at 6pm to share how the day went and confirm any concerns.",
+          completed: false
+        }
+      ],
+      images: [],
+      language: "en",
+      acknowledgments: {
+        briefing: false,
+        history: false,
+        appointments: false,
+        caregivers: false,
+        checklist: false
+      },
+      status: "pending",
+      createdAt: handoverSessionCreated,
+      expiresAt: new Date(new Date(handoverSessionCreated).getTime() + 60 * 60 * 1000).toISOString()
+    }
+  ];
+
   const loadCategories: CareLoadCategory[] = [
     { category: "appointment", counts: { rachel: 4, ming: 1, lina: 1 } },
     { category: "transport", counts: { rachel: 3, ming: 1, lina: 0 } },
@@ -297,13 +398,23 @@ export function createSeedData(): AppData {
       age: 78,
       context: "Mild dementia, recent fall, rehab follow-up",
       address: "Ang Mo Kio HDB flat",
-      careCircleId: "circle-mum"
+      careCircleId: "circle-mum",
+      relationship: "Mother",
+      medicalConditions: ["Mild dementia", "Hypertension", "Recent fall (left wrist contusion)"],
+      allergies: ["Penicillin"],
+      currentMedications: ["Donepezil 5mg (mornings)", "Amlodipine 5mg (mornings)", "Calcium + Vitamin D"],
+      emergencyContacts: [
+        { name: "Dr. Tan (GP)", relationship: "Family doctor", phone: "+65 6555 0101" },
+        { name: "Ming", relationship: "Son", phone: "+65 9111 2233" },
+        { name: "Lina", relationship: "Daughter", phone: "+65 9222 3344" }
+      ]
     },
     tasks,
     timeline,
     documents,
     careSignals,
     handovers,
+    handoverSessions,
     loadCategories
   };
 }

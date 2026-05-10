@@ -7,16 +7,28 @@ import type { CaregiverProfile, CareRecipient } from "@/lib/types";
 
 const STORAGE_KEY = "tandem-home-state-v1";
 
+export type Account = {
+  name: string;
+  language?: string;
+  createdAt: string;
+};
+
 export type HomeState = {
   caregiver: CaregiverProfile;
   patients: CareRecipient[];
   selectedPatientId?: string;
+  hasEntered?: boolean;
+  hasBegunCare?: boolean;
+  accounts?: Account[];
 };
 
 const defaultState: HomeState = {
   caregiver: mockCaregiver,
   patients: mockPatients,
   selectedPatientId: mockPatients[0]?.id,
+  hasEntered: false,
+  hasBegunCare: false,
+  accounts: [],
 };
 
 function read(): HomeState {
@@ -46,7 +58,18 @@ export function useHomeState() {
   const [hydrated, setHydrated] = React.useState(false);
 
   React.useEffect(() => {
-    setState(read());
+    const initial = read();
+    // Backfill: if there's a caregiver name from a prior session but no account record for them,
+    // register them so the splash can recognise them as a returning user.
+    const accounts = initial.accounts ?? [];
+    const name = initial.caregiver?.name?.trim();
+    if (name && !accounts.some((account) => account.name.toLowerCase() === name.toLowerCase())) {
+      initial.accounts = [
+        ...accounts,
+        { name, language: initial.caregiver.language, createdAt: new Date().toISOString() },
+      ];
+    }
+    setState(initial);
     setHydrated(true);
   }, []);
 
@@ -64,7 +87,12 @@ export function useHomeState() {
   }, []);
 
   const addPatient = React.useCallback(
-    (draft: Pick<CareRecipient, "name" | "age" | "relationship" | "country" | "avatar">) => {
+    (
+      draft: Pick<
+        CareRecipient,
+        "name" | "age" | "relationship" | "country" | "avatar" | "language" | "emergencyContacts"
+      >,
+    ) => {
       const id = `recipient-${Date.now()}`;
       const patient: CareRecipient = {
         id,
@@ -73,6 +101,8 @@ export function useHomeState() {
         relationship: draft.relationship,
         country: draft.country,
         avatar: draft.avatar,
+        language: draft.language,
+        emergencyContacts: draft.emergencyContacts,
         context: "",
         address: "",
         careCircleId: state.caregiver.circleId,
@@ -114,6 +144,57 @@ export function useHomeState() {
     setState((s) => ({ ...s, selectedPatientId: id }));
   }, []);
 
+  const findAccount = React.useCallback(
+    (rawName: string) => {
+      const name = rawName.trim().toLowerCase();
+      if (!name) return null;
+      return (state.accounts ?? []).find((account) => account.name.toLowerCase() === name) ?? null;
+    },
+    [state.accounts],
+  );
+
+  const signInOrCreate = React.useCallback(
+    (rawName: string): { isNew: boolean; name: string } | null => {
+      const name = rawName.trim();
+      if (!name) return null;
+      const accounts = state.accounts ?? [];
+      const existing = accounts.find((account) => account.name.toLowerCase() === name.toLowerCase());
+      const isNew = !existing;
+      const account: Account = existing ?? { name, createdAt: new Date().toISOString() };
+      setState((s) => ({
+        ...s,
+        caregiver: {
+          ...s.caregiver,
+          name: account.name,
+          language: account.language ?? s.caregiver.language,
+        },
+        accounts: existing ? s.accounts ?? [] : [...(s.accounts ?? []), account],
+        hasEntered: true,
+      }));
+      return { isNew, name: account.name };
+    },
+    [state.accounts],
+  );
+
+  const markEntered = React.useCallback(() => {
+    setState((s) => (s.hasEntered ? s : { ...s, hasEntered: true }));
+  }, []);
+
+  const unmarkEntered = React.useCallback(() => {
+    setState((s) => (!s.hasEntered ? s : { ...s, hasEntered: false, hasBegunCare: false }));
+  }, []);
+
+  const setHasBegunCare = React.useCallback((value: boolean) => {
+    setState((s) => (s.hasBegunCare === value ? s : { ...s, hasBegunCare: value }));
+  }, []);
+
+  const resetHome = React.useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+    }
+    setState(defaultState);
+  }, []);
+
   return {
     state,
     hydrated,
@@ -123,5 +204,11 @@ export function useHomeState() {
     importPatient,
     updatePatient,
     selectPatient,
+    findAccount,
+    signInOrCreate,
+    markEntered,
+    unmarkEntered,
+    setHasBegunCare,
+    resetHome,
   };
 }
