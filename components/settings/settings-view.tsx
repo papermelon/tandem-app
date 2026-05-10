@@ -2,7 +2,24 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, Globe, KeyRound, Mail, Plane, RefreshCw, Settings, Shield, Sparkles, User, Wand2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Copy,
+  Database,
+  ExternalLink,
+  FileText,
+  Globe,
+  KeyRound,
+  Mail,
+  MessageCircle,
+  Plane,
+  RefreshCw,
+  Settings,
+  Shield,
+  Sparkles,
+  User,
+  Wand2
+} from "lucide-react";
 
 import { SignOutButton, useAuth } from "@/components/auth/auth-provider";
 import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
@@ -19,6 +36,7 @@ import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/
 import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
 
 const ROUTING_CATEGORIES: TaskCategory[] = [
@@ -235,6 +253,22 @@ export function SettingsView() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-primary" />
+              Telegram sync
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TelegramConnectCard
+              careRecipientId={recipient.id}
+              isLiveMode={isLiveMode}
+              recipientName={recipient.name}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
               <Shield className="size-5 text-primary" />
               Care recipient
             </CardTitle>
@@ -407,6 +441,147 @@ function InviteFamilyMemberForm({ disabled }: { disabled: boolean }) {
       </Button>
       {message ? <p className="text-xs leading-5 text-muted-foreground">{message}</p> : null}
     </form>
+  );
+}
+
+type TelegramLinkPayload = {
+  token?: string;
+  expiresAt?: string;
+  botUsername?: string | null;
+  botUrl?: string | null;
+  startCommand?: string;
+  recipientName?: string;
+  error?: string;
+};
+
+function TelegramConnectCard({
+  careRecipientId,
+  isLiveMode,
+  recipientName
+}: {
+  careRecipientId: string;
+  isLiveMode: boolean;
+  recipientName: string;
+}) {
+  const [link, setLink] = React.useState<TelegramLinkPayload | null>(null);
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  async function createLink() {
+    setLoading(true);
+    setMessage(null);
+    setCopied(false);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      const token = data.session?.access_token;
+
+      if (!token) {
+        setMessage("Sign in to Live Supabase before connecting Telegram.");
+        setLink(null);
+        return;
+      }
+
+      const response = await fetch("/api/telegram/link", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ careRecipientId })
+      });
+      const payload = (await response.json().catch(() => ({}))) as TelegramLinkPayload;
+
+      if (!response.ok) {
+        setMessage(payload.error ?? "Could not create a Telegram link.");
+        setLink(null);
+        return;
+      }
+
+      setLink(payload);
+    } catch {
+      setMessage("Could not create a Telegram link.");
+      setLink(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyCommand() {
+    if (!link?.startCommand) return;
+    try {
+      await navigator.clipboard.writeText(link.startCommand);
+      setCopied(true);
+    } catch {
+      setMessage("Could not copy the command.");
+    }
+  }
+
+  return (
+    <div className={`rounded-2xl border p-3 ${isLiveMode ? "bg-white/70" : "bg-muted/40"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold">Telegram capture</div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {isLiveMode
+              ? `Link forwarded care notes to ${recipientName}'s live care space.`
+              : "Available after signing in to the Live Supabase care space."}
+          </p>
+        </div>
+        <Badge variant={isLiveMode ? "success" : "warning"} className="shrink-0">
+          {isLiveMode ? "Live" : "Live only"}
+        </Badge>
+      </div>
+
+      <Button
+        className="mt-3 w-full"
+        variant={isLiveMode ? "default" : "outline"}
+        onClick={createLink}
+        disabled={!isLiveMode || loading}
+      >
+        <MessageCircle className="size-4" />
+        {loading ? "Creating link" : "Connect Telegram"}
+      </Button>
+
+      {link?.startCommand ? (
+        <div className="mt-3 rounded-xl border bg-white/80 p-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <CheckCircle2 className="size-3.5 text-primary" />
+            Link ready
+          </div>
+          {link.botUrl ? (
+            <Button asChild variant="soft" size="sm" className="mt-2 w-full">
+              <a href={link.botUrl} target="_blank" rel="noreferrer">
+                Open Telegram
+                <ExternalLink className="size-3.5" />
+              </a>
+            </Button>
+          ) : null}
+          <div className="mt-2 flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-2 py-2 text-xs">
+              {link.startCommand}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-9 shrink-0"
+              onClick={copyCommand}
+              aria-label="Copy Telegram start command"
+            >
+              {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            This token expires in 15 minutes and links only this Telegram sender.
+          </p>
+        </div>
+      ) : null}
+
+      {message ? <p className="mt-2 text-xs leading-5 text-muted-foreground">{message}</p> : null}
+    </div>
   );
 }
 
