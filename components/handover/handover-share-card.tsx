@@ -56,27 +56,27 @@ export function HandoverShareCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <QrCode className="size-5 text-primary" />
-          Share via handover QR
+          Share with a QR code
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {!selected ? (
           <p className="text-sm text-muted-foreground">
-            Select a care recipient on the home screen first.
+            Choose someone on the home screen first.
           </p>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Generate an encrypted QR code so another caregiver can import{" "}
+              Generate an encrypted QR code so another family member can add{" "}
               <span className="font-semibold text-foreground">{selected.name}</span>&apos;s profile into
-              their circle.
+              their Tandem app.
             </p>
 
             {qr ? (
               <div className="flex flex-col items-center gap-3 rounded-2xl border bg-white p-4">
                 <QRCodeSVG value={qr} size={220} level="M" includeMargin />
                 <div className="text-center text-xs text-muted-foreground">
-                  Point the other caregiver&apos;s camera at this code.
+                  Ask them to scan this with their camera.
                 </div>
                 <Button variant="ghost" size="sm" className="gap-2" onClick={generate} disabled={generating}>
                   <RefreshCw className="size-3" />
@@ -85,7 +85,7 @@ export function HandoverShareCard() {
               </div>
             ) : (
               <Button onClick={generate} disabled={generating} className="w-full">
-                {generating ? "Generating…" : `Generate QR for ${selected.name}`}
+                {generating ? "Generating…" : `Create QR for ${selected.name}`}
               </Button>
             )}
 

@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tandem Hackathon Judge Briefing</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 16mm 15mm 17mm;
+      }
+
+      :root {
+        --ink: #17211b;
+        --muted: #526158;
+        --line: #d9e2dc;
+        --soft: #f4f7f2;
+        --accent: #1f6f54;
+        --accent-2: #7c4f1d;
+        --panel: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #ffffff;
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        font-size: 10.5px;
+        line-height: 1.45;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      h3 {
+        font-size: 12px;
+        line-height: 1.25;
+      }
+
+      ul {
+        margin: 6px 0 0;
+        padding-left: 15px;
+      }
+
+      li {
+        margin: 3px 0;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .cover {
+        padding: 18px 0 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .eyebrow {
+        margin-bottom: 8px;
+        color: var(--accent-2);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .subtitle {
+        max-width: 620px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .meta {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 9.5px;
+      }
+
+      .section {
+        margin-top: 15px;
+        break-inside: avoid;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 10px;
+        break-inside: avoid;
+      }
+
+      .soft {
+        background: var(--soft);
+      }
+
+      .name {
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      .role {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .tag {
+        display: inline-block;
+        margin-top: 7px;
+        border-radius: 999px;
+        background: #e4efe9;
+        padding: 3px 7px;
+        color: #18533f;
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .quote {
+        margin-top: 8px;
+        border-left: 3px solid var(--accent);
+        padding-left: 8px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .callout {
+        border: 1px solid #c9ddd3;
+        border-radius: 8px;
+        background: #f2f8f5;
+        padding: 10px;
+      }
+
+      .callout strong {
+        color: var(--accent);
+      }
+
+      .matrix {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        font-size: 9.7px;
+      }
+
+      .matrix th,
+      .matrix td {
+        vertical-align: top;
+        border-bottom: 1px solid var(--line);
+        padding: 7px;
+        text-align: left;
+      }
+
+      .matrix th {
+        background: var(--soft);
+        color: var(--ink);
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .matrix tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .judge-block {
+        margin-top: 10px;
+        break-inside: avoid;
+      }
+
+      .judge-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 7px;
+      }
+
+      .judge-head .focus {
+        color: var(--accent-2);
+        font-size: 9.5px;
+        font-weight: 800;
+        text-align: right;
+        text-transform: uppercase;
+      }
+
+      .source-list {
+        columns: 2;
+        column-gap: 16px;
+        font-size: 8.5px;
+        line-height: 1.35;
+      }
+
+      .source-list li {
+        break-inside: avoid;
+        margin-bottom: 4px;
+      }
+
+      .page-break {
+        break-before: page;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="cover">
+      <div class="eyebrow">Tandem Hackathon Demo Prep</div>
+      <h1>Judge Background and Pitch Considerations</h1>
+      <p class="subtitle">
+        A practical briefing for tailoring Tandem's demo to three judges: patient advocacy and
+        behavioural health, ageing and mental health social impact, and public-good healthtech
+        engineering.
+      </p>
+      <p class="meta">Prepared May 10, 2026. Based on public research and Tandem repo context.</p>
+    </header>
+
+    <section class="section callout">
+      <strong>Recommended positioning:</strong> Tandem is care coordination infrastructure for
+      family caregivers. It turns scattered notes, appointments, documents, and family messages
+      into shared context, reviewed tasks, handovers, and accountability. It is not a diagnostic
+      tool and does not replace clinicians or caregivers.
+    </section>
+
+    <section class="section">
+      <h2>What To Lead With</h2>
+      <div class="two-col">
+        <div class="card soft">
+          <h3>Core story</h3>
+          <p>
+            After a clinic visit, instructions sit across WhatsApp, PDFs, voice notes, and memory.
+            One sibling assumes another handled transport, medication reminders are unclear, and
+            the primary caregiver silently becomes the project manager.
+          </p>
+        </div>
+        <div class="card soft">
+          <h3>Demo proof</h3>
+          <p>
+            Show Tandem capturing a care item, extracting the important actions, assigning work
+            across the care circle, showing workload imbalance, and generating a handover for a
+            family member stepping in.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Judge Snapshot</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="name">Soh Lai Yee</div>
+          <div class="role">President, Society of Behavioural Health Singapore; Group Chief Patient Officer, NUHS</div>
+          <span class="tag">Patient and family-centred care</span>
+          <p class="quote">
+            Likely to value caregiver partnership, patient advocacy, behavioural insight, equity,
+            and human review over automation for its own sake.
+          </p>
+        </div>
+        <div class="card">
+          <div class="name">Jerome Yuen</div>
+          <div class="role">Chief Growth Partner, The Therapy Platform; social impact and ageing-sector leader</div>
+          <span class="tag">Dignity, loneliness, mental health</span>
+          <p class="quote">
+            Likely to value whether Tandem helps families show up consistently, reduces isolation,
+            and respects older adults as people rather than cases.
+          </p>
+        </div>
+        <div class="card">
+          <div class="name">Nicolas Spano</div>
+          <div class="role">Head of HealthTech, Open Government Products</div>
+          <span class="tag">Public-good healthtech</span>
+          <p class="quote">
+            Likely to test feasibility, reliability, privacy, workflow fit, measurable impact, and
+            what is built versus mocked.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Demo Spine</h2>
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Step</th>
+            <th>What to show</th>
+            <th>Why it lands</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. Fragmented care</td>
+            <td>Doctor memo, family note, or Telegram capture</td>
+            <td>Names the real coordination failure before introducing technology.</td>
+          </tr>
+          <tr>
+            <td>2. AI capture</td>
+            <td>Plain-English summary plus extracted tasks</td>
+            <td>Shows immediate reduction in admin burden, with human review.</td>
+          </tr>
+          <tr>
+            <td>3. Shared ownership</td>
+            <td>Assign or claim transport, admin, medication reminder, check-in</td>
+            <td>Moves from "Rachel remembers everything" to distributed care.</td>
+          </tr>
+          <tr>
+            <td>4. Load visibility</td>
+            <td>Care-load view showing imbalance</td>
+            <td>Makes invisible caregiver burden visible and actionable.</td>
+          </tr>
+          <tr>
+            <td>5. Handover</td>
+            <td>7-day brief for a sibling returning after being away</td>
+            <td>Shows continuity of care without making the lead caregiver repeat herself.</td>
+          </tr>
+          <tr>
+            <td>6. Safety close</td>
+            <td>No diagnosis, source-linked summaries, review-before-save</td>
+            <td>Pre-empts clinical safety, privacy, and AI-overreach concerns.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section page-break">
+      <h2>Judge-Specific Guidance</h2>
+
+      <div class="card judge-block">
+        <div class="judge-head">
+          <div>
+            <div class="name">Soh Lai Yee</div>
+            <div class="role">Patient advocacy, behavioural health, person- and family-centred care</div>
+          </div>
+          <div class="focus">Care partnership</div>
+        </div>
+        <div class="two-col" style="margin-top: 8px">
+          <div>
+            <h3>Relevant background</h3>
+            <ul>
+              <li>President of the Society of Behavioural Health Singapore.</li>
+              <li>Group Chief Patient Officer at NUHS, leading patient advocacy and person- and family-centred care work.</li>
+              <li>Associated with initiatives involving patient, caregiver, and community participation in care design, including the Patient and Family Advocacy Council for Tengah General and Community Hospital.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>How to pitch to her</h3>
+            <ul>
+              <li>Say "caregivers as partners in care," not "AI manages the family."</li>
+              <li>Highlight human review, plain-English summaries, and family consent.</li>
+              <li>Frame Tandem as a behavioural nudge system that helps the whole care circle act earlier.</li>
+            </ul>
+          </div>
+        </div>
+        <table class="matrix" style="margin-top: 8px">
+          <tbody>
+            <tr>
+              <td><strong>Reference</strong></td>
+              <td>NUHS Caregivers' Day and TGCH Patient and Family Advocacy Council: patients, caregivers, advocates, and residents helping shape care practices, design, feedback, health education, and family support.</td>
+            </tr>
+            <tr>
+              <td><strong>Features to highlight</strong></td>
+              <td>AI-assisted capture, handover briefs, meeting summaries, workload visibility, review-before-save, medication reminders as notes only.</td>
+            </tr>
+            <tr>
+              <td><strong>Refinements</strong></td>
+              <td>Add "patient/caregiver reviewed" status, clearer consent language, source-linked summaries, and a "what changed since last visit" view.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card judge-block">
+        <div class="judge-head">
+          <div>
+            <div class="name">Jerome Yuen</div>
+            <div class="role">Ageing communities, loneliness reduction, mental health access, nonprofit growth</div>
+          </div>
+          <div class="focus">Dignity and connection</div>
+        </div>
+        <div class="two-col" style="margin-top: 8px">
+          <div>
+            <h3>Relevant background</h3>
+            <ul>
+              <li>Chief Growth Partner at The Therapy Platform, which presents itself around accessible and secure counselling.</li>
+              <li>Former CEO of Cycling Without Age Singapore, including work on senior social connection and VR trishaw experiences.</li>
+              <li>Has nonprofit and fundraising experience, including Club Rainbow / Ride for Rainbows and World Vision Singapore.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>How to pitch to him</h3>
+            <ul>
+              <li>Show that Tandem helps families show up, not just close tasks.</li>
+              <li>Include one emotional support task: call after rehab, visit, or check in after a difficult appointment.</li>
+              <li>Talk about dignity, reassurance, and reducing loneliness without making the older adult passive.</li>
+            </ul>
+          </div>
+        </div>
+        <table class="matrix" style="margin-top: 8px">
+          <tbody>
+            <tr>
+              <td><strong>Reference</strong></td>
+              <td>Cycling Without Age's senior engagement work and Virtual Generations VR rides were designed around social isolation, mobility limits, reminiscence, and emotional wellbeing.</td>
+            </tr>
+            <tr>
+              <td><strong>Features to highlight</strong></td>
+              <td>Check-in tasks, family engagement loop, voice capture, warm timeline, handovers that help distant family members re-enter the care circle.</td>
+            </tr>
+            <tr>
+              <td><strong>Refinements</strong></td>
+              <td>Separate clinical/admin tasks from social connection tasks, add compassionate notification copy, and show caregiver appreciation or contribution visibility.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card judge-block">
+        <div class="judge-head">
+          <div>
+            <div class="name">Nicolas Spano</div>
+            <div class="role">Public-good engineering, healthtech delivery, practical user-centred systems</div>
+          </div>
+          <div class="focus">Feasibility and impact</div>
+        </div>
+        <div class="two-col" style="margin-top: 8px">
+          <div>
+            <h3>Relevant background</h3>
+            <ul>
+              <li>Listed by OGP as Head of HealthTech.</li>
+              <li>OGP HealthTech work includes Bright, Care360, Health Appointment System, Referral Exchange, Rooster, and Social360.</li>
+              <li>OGP emphasizes rapid prototyping, real users, public-good delivery, security, and measurable outcomes.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>How to pitch to him</h3>
+            <ul>
+              <li>Be precise about what is already built versus v2 roadmap.</li>
+              <li>Show workflow reliability: deterministic demo mode, review queues, task state, and auditability.</li>
+              <li>Name metrics: handover time, extraction review rate, missed-task reduction, load imbalance reduction.</li>
+            </ul>
+          </div>
+        </div>
+        <table class="matrix" style="margin-top: 8px">
+          <tbody>
+            <tr>
+              <td><strong>Reference</strong></td>
+              <td>OGP HealthTech products solve coordination problems across appointments, referrals, social work, and clinical messaging. Tandem is analogous at the family-care layer.</td>
+            </tr>
+            <tr>
+              <td><strong>Features to highlight</strong></td>
+              <td>Next.js/Supabase/OpenAI stack, Telegram ingestion, mock fallback, structured task/timeline data model, handover generation, safety boundaries.</td>
+            </tr>
+            <tr>
+              <td><strong>Refinements</strong></td>
+              <td>Add source citations, a visible privacy model, simple audit trail, and one metrics screen or slide showing expected impact.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <h2>Feature Mapping</h2>
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>Tandem feature</th>
+            <th>Why it matters</th>
+            <th>Best judge resonance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Telegram, voice, document, and web capture</td>
+            <td>Meets families where information already lives instead of forcing a new workflow.</td>
+            <td>Soh: access and family participation. Nicolas: practical adoption.</td>
+          </tr>
+          <tr>
+            <td>AI extraction with review-before-save</td>
+            <td>Reduces admin work while keeping humans in control.</td>
+            <td>Soh: patient safety and agency. Nicolas: AI guardrails.</td>
+          </tr>
+          <tr>
+            <td>Task board and ownership</td>
+            <td>Turns vague "someone should do this" into visible responsibility.</td>
+            <td>All three.</td>
+          </tr>
+          <tr>
+            <td>Care-load visibility</td>
+            <td>Surfaces the invisible burden carried by the primary caregiver.</td>
+            <td>Soh: caregiver advocacy. Jerome: dignity and wellbeing.</td>
+          </tr>
+          <tr>
+            <td>Handover brief</td>
+            <td>Lets backup caregivers step in without interrogating the primary caregiver.</td>
+            <td>Soh: continuity of care. Nicolas: clear workflow value.</td>
+          </tr>
+          <tr>
+            <td>Meeting summaries</td>
+            <td>Captures decisions, open questions, and follow-ups from doctor or family meetings.</td>
+            <td>Soh: person-centred decisions. Nicolas: structured records.</td>
+          </tr>
+          <tr>
+            <td>Care signals and check-ins</td>
+            <td>Moves the product from record keeping toward timely family action.</td>
+            <td>Jerome: connection and loneliness. Nicolas: signal quality questions.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Suggested Closing Lines</h2>
+      <div class="grid">
+        <div class="card soft">
+          <h3>For Soh</h3>
+          <p>Tandem treats caregivers as partners in care, not background logistics.</p>
+        </div>
+        <div class="card soft">
+          <h3>For Jerome</h3>
+          <p>Tandem makes it easier for families to show up consistently, not just during crises.</p>
+        </div>
+        <div class="card soft">
+          <h3>For Nicolas</h3>
+          <p>Tandem is a practical public-health workflow tool: capture, structure, assign, audit, and measure.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Sources</h2>
+      <ol class="source-list">
+        <li>Society of Behavioural Health Singapore, executive committee: <a href="https://www.sgbehaviouralhealth.com/our-team">sgbehaviouralhealth.com/our-team</a></li>
+        <li>Society of Behavioural Health Singapore, president message: <a href="https://www.sgbehaviouralhealth.com/presidents-message">sgbehaviouralhealth.com/presidents-message</a></li>
+        <li>NUHS Caregivers' Day and TGCH Patient and Family Advocacy Council: <a href="https://www.nuhs.edu.sg/about-nuhs/news-and-stories/news-and-stories-details/empowering-patients--redefining-care--nuhs-pioneers-new-patient-and-community-partnership-initiative-at-tengah-general-and-community-hospital">nuhs.edu.sg</a></li>
+        <li>NUHS senior leadership listing: <a href="https://www.nuhs.edu.sg/about-nuhs/our-leadership/nuhs-senior-leadership">nuhs.edu.sg/about-nuhs/our-leadership</a></li>
+        <li>The Therapy Platform company profile: <a href="https://sg.linkedin.com/company/the-therapy-platform">linkedin.com/company/the-therapy-platform</a></li>
+        <li>SUSS story on Jerome Yuen and Virtual Generations: <a href="https://www.suss.edu.sg/news-events/suss-news/campus-updates/detail/2025/03/26/seniors-going-places-on-virtual-rides%21">suss.edu.sg</a></li>
+        <li>SUSS Geronpreneurship Innovation Festival 2025 speech: <a href="https://www.suss.edu.sg/about-suss/media-centres/speeches/speech-by-minister-desmond-lee-at-the-suss-geronpreneurship-innovation-festival-2025">suss.edu.sg</a></li>
+        <li>OGP leadership page: <a href="https://www.open.gov.sg/our-leadership/">open.gov.sg/our-leadership</a></li>
+        <li>OGP HealthTech role description listing healthtech projects: <a href="https://careers.open.gov.sg/o/lead-product-designer-healthtech">careers.open.gov.sg</a></li>
+        <li>Health Appointment System product report: <a href="https://reports.open.gov.sg/has/overview">reports.open.gov.sg/has/overview</a></li>
+      </ol>
+    </section>
+  </body>
+</html>

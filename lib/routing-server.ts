@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { CARE_CIRCLE_ID } from "@/lib/captures";
 import { rankAssignees, ROUTING_SCORE_FLOOR } from "@/lib/routing";
 import type { FamilyMember, RoutingCandidate, Task, TaskCategory, TaskPriority } from "@/lib/types";
 
@@ -19,22 +18,32 @@ export async function applyRoutingForCapture(
   supabase: SupabaseClient,
   captureId: string
 ): Promise<void> {
+  const captureResult = await supabase
+    .from("capture_events")
+    .select("care_circle_id")
+    .eq("id", captureId)
+    .maybeSingle();
+
+  if (captureResult.error || !captureResult.data?.care_circle_id) return;
+  const careCircleId = captureResult.data.care_circle_id as string;
+
   const [itemsResult, usersResult, tasksResult, circleResult] = await Promise.all([
     supabase
       .from("extracted_items")
       .select("id, capture_event_id, item_type, category, due_at, priority, structured_data, assigned_to_id")
       .eq("capture_event_id", captureId),
     supabase
-      .from("users")
-      .select("id, name, role, avatar, phone, is_default_caregiver, category_preferences, load_capacity_pct"),
+      .from("circle_members")
+      .select("users:user_id(id, name, role, avatar, phone, is_default_caregiver, category_preferences, load_capacity_pct)")
+      .eq("care_circle_id", careCircleId),
     supabase
       .from("tasks")
       .select("id, title, category, assignee_id, due_date, status, priority")
-      .eq("care_circle_id", CARE_CIRCLE_ID),
+      .eq("care_circle_id", careCircleId),
     supabase
       .from("care_circles")
       .select("auto_execute_assignments")
-      .eq("id", CARE_CIRCLE_ID)
+      .eq("id", careCircleId)
       .maybeSingle()
   ]);
 
@@ -44,16 +53,20 @@ export async function applyRoutingForCapture(
   const taskItems = items.filter((item) => item.item_type === "task" || item.item_type === "appointment");
   if (taskItems.length === 0) return;
 
-  const members: FamilyMember[] = (usersResult.data ?? []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    role: u.role,
-    avatar: u.avatar,
-    phone: u.phone ?? undefined,
-    isDefaultCaregiver: Boolean(u.is_default_caregiver),
-    categoryPreferences: (u.category_preferences ?? []) as TaskCategory[],
-    loadCapacityPct: u.load_capacity_pct ?? 100
-  }));
+  const members: FamilyMember[] = (usersResult.data ?? []).flatMap((row) => {
+    const u = Array.isArray(row.users) ? row.users[0] : row.users;
+    if (!u) return [];
+    return {
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      avatar: u.avatar,
+      phone: u.phone ?? undefined,
+      isDefaultCaregiver: Boolean(u.is_default_caregiver),
+      categoryPreferences: (u.category_preferences ?? []) as TaskCategory[],
+      loadCapacityPct: u.load_capacity_pct ?? 100
+    };
+  });
 
   const tasks: Task[] = (tasksResult.data ?? []).map((t) => ({
     id: t.id,
@@ -100,7 +113,7 @@ export async function applyRoutingForCapture(
     await supabase.from("extracted_items").update(patch).eq("id", item.id);
 
     decisionRows.push({
-      care_circle_id: CARE_CIRCLE_ID,
+      care_circle_id: careCircleId,
       extracted_item_id: item.id,
       candidates,
       chosen_member_id: chosenId,

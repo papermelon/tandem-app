@@ -124,7 +124,7 @@ export function QRScannerModal({ open, onClose, onResult }: Props) {
             <div className="grid size-full place-items-center p-6 text-center text-sm text-white/80">
               <div>
                 <Camera className="mx-auto mb-2 size-8 opacity-70" />
-                Live scanning isn't supported in this browser. Upload an image of the QR code instead.
+                Live scanning isn&apos;t supported in this browser. Upload an image of the QR code instead.
               </div>
             </div>
           )}

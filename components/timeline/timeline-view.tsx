@@ -49,9 +49,9 @@ export function TimelineView() {
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeading
-        eyebrow="Care Timeline"
-        title="A family feed with structure"
-        description="Updates stay familiar like chat, with enough context to turn them into shared action."
+        eyebrow="Timeline"
+        title="The story so far"
+        description="A simple family feed for updates, decisions, documents, and moments that need follow-up."
         icon={MessageSquare}
       />
 
@@ -105,7 +105,7 @@ export function TimelineView() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button variant="soft" size="sm" onClick={() => createFollowUp(item)}>
                       <Plus />
-                      Create task
+                      Add follow-up
                     </Button>
                     <Button variant="outline" size="sm">
                       <UserRoundPlus />

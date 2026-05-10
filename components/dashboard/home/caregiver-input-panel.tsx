@@ -74,12 +74,12 @@ export function CaregiverInputPanel({ patient }: Props) {
     <section className="rounded-2xl border bg-white/75 p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-bold">Share a care update</div>
+          <div className="text-sm font-bold">Share an update</div>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Add a note or image for the family to review and save into {patient.name}&apos;s care databank.
+            Drop in a note, letter, photo, or screenshot. Tandem will help turn it into something the family can act on.
           </p>
         </div>
-        <Badge variant="secondary">Family inbox</Badge>
+        <Badge variant="secondary">For review</Badge>
       </div>
 
       <div className="mt-3 space-y-3">
@@ -87,7 +87,7 @@ export function CaregiverInputPanel({ patient }: Props) {
           value={text}
           onChange={(event) => setText(event.target.value)}
           aria-label={`Care update for ${patient.name}`}
-          placeholder={`What should the family know about ${patient.name}?`}
+          placeholder={`What should everyone know about ${patient.name}?`}
           className="min-h-24"
         />
 
@@ -124,7 +124,7 @@ export function CaregiverInputPanel({ patient }: Props) {
           </Button>
           <Button type="button" onClick={submitInput} disabled={!hasInput || loading}>
             {loading ? <Loader2 className="animate-spin" /> : <Send />}
-            Share for review
+            Send for review
           </Button>
         </div>
 
@@ -140,7 +140,7 @@ export function CaregiverInputPanel({ patient }: Props) {
           <div className="flex items-center justify-between gap-3 rounded-xl bg-primary/5 px-3 py-2 text-sm">
             <span className="inline-flex items-center gap-2 font-semibold text-primary">
               <Check className="size-4" />
-              Sent to review
+              Sent to Inbox
             </span>
             <Link href={reviewUrl} className="font-semibold text-primary underline-offset-4 hover:underline">
               Open inbox

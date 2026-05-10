@@ -100,15 +100,15 @@ export function InboxView() {
     <div className="mx-auto max-w-5xl">
       <PageHeading
         eyebrow="Inbox"
-        title="Review forwarded care items"
-        description="Review care items from web uploads, voice notes, and Telegram forwards before they become shared family records."
+        title="Check new care updates"
+        description="Review uploads, voice notes, and forwarded messages before they become part of the shared family record."
         icon={Inbox}
-        badge="Pending review first"
+        badge="Nothing saves without review"
       />
 
       <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border bg-white/70 p-3">
         <div className="text-sm leading-6 text-muted-foreground">
-          Queue refreshes automatically. Use Save All only after checking the extracted tasks and notes.
+          New items refresh automatically. Save only after the details look right.
         </div>
         <Button variant="outline" size="sm" onClick={loadCaptures} disabled={loading}>
           {loading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -126,7 +126,7 @@ export function InboxView() {
         <div className="grid min-h-72 place-items-center rounded-2xl border bg-white/70">
           <div className="text-center">
             <Loader2 className="mx-auto size-6 animate-spin text-primary" />
-            <div className="mt-3 text-sm font-semibold">Loading forwarded items</div>
+            <div className="mt-3 text-sm font-semibold">Loading updates</div>
           </div>
         </div>
       ) : captures.length === 0 ? (
@@ -134,9 +134,9 @@ export function InboxView() {
           <CardContent className="grid min-h-72 place-items-center pt-4 text-center">
             <div>
               <Inbox className="mx-auto size-9 text-primary" />
-              <h2 className="mt-3 text-xl font-bold">No pending forwarded items</h2>
+              <h2 className="mt-3 text-xl font-bold">Nothing waiting for review</h2>
               <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                Forward a doctor memo image or appointment screenshot to the Tandem Telegram bot. Extracted details will appear here for review.
+                Add a note, doctor memo, appointment screenshot, or bill. Tandem will queue the details here before anything is saved.
               </p>
             </div>
           </CardContent>
@@ -205,7 +205,7 @@ function CaptureCard({
             </Button>
             <Button onClick={onApprove} disabled={busy || pendingItems.length === 0}>
               {busy ? <Loader2 className="animate-spin" /> : <Check />}
-              Save All
+              Save all
             </Button>
           </div>
         </div>
@@ -214,7 +214,7 @@ function CaptureCard({
         <SourcePreview capture={capture} />
         <div className="space-y-4">
           <div className="rounded-2xl bg-primary/5 p-4">
-            <div className="text-xs font-bold uppercase text-primary">AI summary</div>
+            <div className="text-xs font-bold uppercase text-primary">Quick summary</div>
             <p className="mt-2 text-sm leading-6">{capture.aiSummary || "No summary was generated."}</p>
           </div>
 
