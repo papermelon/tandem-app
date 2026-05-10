@@ -16,12 +16,27 @@ const TABLES = [
   "handovers"
 ];
 
+function describeSupabaseUrl() {
+  const value = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!value) {
+    return { present: false, valid: false, origin: null, host: null };
+  }
+
+  try {
+    const url = new URL(value);
+    return { present: true, valid: true, origin: url.origin, host: url.hostname };
+  } catch {
+    return { present: true, valid: false, origin: null, host: null };
+  }
+}
+
 export async function GET() {
   const env = {
     hasPublicUrl: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
     hasAnonKey: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
     hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
-    hasSupabaseServerEnv: hasSupabaseServerEnv()
+    hasSupabaseServerEnv: hasSupabaseServerEnv(),
+    supabaseUrl: describeSupabaseUrl()
   };
 
   const supabase = createSupabaseAdmin();
