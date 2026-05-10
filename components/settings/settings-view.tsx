@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, Globe, KeyRound, Mail, Plane, RefreshCw, Settings, Shield, Sparkles, User, Wand2 } from "lucide-react";
+import { Database, FileText, Globe, KeyRound, Mail, Plane, RefreshCw, Settings, Sparkles, User, Wand2 } from "lucide-react";
 
 import { SignOutButton, useAuth } from "@/components/auth/auth-provider";
 import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
 import { MemberAvatar } from "@/components/shared/member-avatar";
-import { CareProfileSummary } from "@/components/shared/care-profile-summary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +16,7 @@ import { useCareData } from "@/components/providers/care-data-provider";
 import { summarizeMemberLoad } from "@/lib/care-load";
 import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/demo-mode";
 import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
+import { useT } from "@/lib/i18n";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
@@ -32,9 +32,10 @@ const ROUTING_CATEGORIES: TaskCategory[] = [
 ];
 
 export function SettingsView() {
-  const { members, recipient, documents, loadCategories, mockMode, resetDemo, updateMemberPreferences } = useCareData();
+  const { members, documents, loadCategories, mockMode, resetDemo, updateMemberPreferences } = useCareData();
   const auth = useAuth();
   const home = useHomeState();
+  const t = useT();
   const [editingName, setEditingName] = React.useState(false);
   const [draftName, setDraftName] = React.useState(home.state.caregiver.name);
   const [demoForced, setDemoForced] = React.useState(false);
@@ -86,20 +87,20 @@ export function SettingsView() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
-      <MobilePageHeader title="Settings" icon={Settings} />
+      <MobilePageHeader title={t("settings.title")} icon={Settings} />
 
       <section className="space-y-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="size-5 text-primary" />
-              Caregiver
+              {t("settings.caregiver")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-2xl border bg-white/70 p-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Name
+                {t("settings.name")}
               </div>
               {editingName ? (
                 <div className="mt-2 flex gap-2">
@@ -117,14 +118,14 @@ export function SettingsView() {
                       setEditingName(false);
                     }}
                   >
-                    Save
+                    {t("settings.save")}
                   </Button>
                 </div>
               ) : (
                 <div className="mt-2 flex items-center justify-between gap-2">
-                  <div className="font-semibold">{home.state.caregiver.name || auth.profile?.name || "Not set"}</div>
+                  <div className="font-semibold">{home.state.caregiver.name || auth.profile?.name || t("settings.notSet")}</div>
                   <Button size="sm" variant="ghost" onClick={() => setEditingName(true)}>
-                    Edit
+                    {t("settings.edit")}
                   </Button>
                 </div>
               )}
@@ -134,7 +135,7 @@ export function SettingsView() {
               <label className="block">
                 <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <Globe className="size-3.5" />
-                  Language
+                  {t("settings.language")}
                 </span>
                 <select
                   className="mt-2 block w-full rounded-xl border bg-white px-3 py-2 text-sm"
@@ -148,9 +149,6 @@ export function SettingsView() {
                   ))}
                 </select>
               </label>
-              <p className="mt-2 text-xs text-muted-foreground">
-                SEA-LION-aligned language list. UI translation is wired in a follow-up.
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -159,7 +157,7 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="size-5 text-primary" />
-              App mode
+              {t("settings.appMode")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -226,26 +224,9 @@ export function SettingsView() {
             <Button asChild variant="ghost" className="w-full">
               <Link href="/handover">
                 <Plane className="size-4" />
-                Handover / share circle
+                {t("settings.handoverShare")}
               </Link>
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="size-5 text-primary" />
-              Care recipient
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-2xl bg-primary/5 p-4">
-              <div className="text-2xl font-bold">{recipient.name}, {recipient.age}</div>
-              <div className="mt-1 text-sm leading-6 text-muted-foreground">{recipient.context}</div>
-              <div className="mt-3 rounded-xl bg-white/75 px-3 py-2 text-sm font-semibold">{recipient.address}</div>
-              <CareProfileSummary profile={recipient.careProfile} phone={recipient.phone} compact className="mt-4" />
-            </div>
           </CardContent>
         </Card>
       </section>
@@ -253,7 +234,7 @@ export function SettingsView() {
       <section className="mt-4 space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Family members</CardTitle>
+            <CardTitle>{t("settings.familyMembers")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((member) => (
@@ -282,7 +263,7 @@ export function SettingsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Records and next views</CardTitle>
+            <CardTitle>{t("settings.records")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="rounded-2xl border bg-white/70 p-3">
@@ -312,7 +293,7 @@ export function SettingsView() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wand2 className="size-5 text-primary" />
-              Smart Assign preferences
+              {t("settings.smartAssign")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
