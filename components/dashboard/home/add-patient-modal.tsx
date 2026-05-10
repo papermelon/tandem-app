@@ -73,7 +73,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/50 sm:place-items-center"
+      className="fixed inset-0 z-[120] grid items-end justify-items-center bg-black/50 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label="New care recipient"

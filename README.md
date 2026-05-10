@@ -91,6 +91,25 @@ When `OPENAI_API_KEY` is absent, AI routes return realistic mock outputs:
 
 This keeps the demo stable for hackathon judging.
 
+## Demo Auth
+
+The app starts with a lightweight Auth/onboarding screen:
+
+- **Continue as Rachel** forces local demo data and opens the existing Ah Muay care circle with Rachel, Ming, and Lina.
+- **Start fresh** forces local demo data with an empty care-recipient list so the onboarding flow can be shown.
+- Email magic-link sign-in uses Supabase Auth when `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are configured. Use this path when two people should edit the same shared Supabase care recipient profile.
+
+Supabase Auth currently bootstraps a `public.users` row for the signed-in person. In live mode, the Home profile selector reads the shared Supabase care recipient and profile edits are persisted through `/api/data/care-recipients/[recipientId]`.
+
+For a live Supabase demo:
+
+1. Apply all migrations in `supabase/migrations`, including `20260612000000_add_care_recipient_profile.sql` and `20260613000000_add_care_recipient_relationship.sql`.
+2. Run `supabase/seed.sql`.
+3. Add `http://localhost:3000/auth/callback` and the deployed `/auth/callback` URL to Supabase Auth redirect URLs.
+4. Sign in with the email link instead of using **Continue as Rachel**.
+
+Production-grade care-circle scoping still needs stricter RLS, invite flows, and session-scoped API writes.
+
 ## Telegram Bot Setup
 
 1. Create a bot with Telegram `@BotFather`.
@@ -106,7 +125,7 @@ Forward an image, screenshot, PDF, or text message to the private bot. Tandem st
 
 ## Demo Script
 
-1. Open Tandem dashboard for Mum.
+1. Open Tandem dashboard for Ah Muay.
 2. Show upcoming rehab and unclaimed transport task.
 3. Upload doctor memo in Capture, or tap “Use demo memo”.
 4. AI extracts summary and suggests tasks.
