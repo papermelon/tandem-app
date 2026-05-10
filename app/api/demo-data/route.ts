@@ -124,6 +124,7 @@ export async function GET() {
         whoIsDoingWhat: handover.who_is_doing_what ?? [],
         suggestedNextActions: handover.suggested_next_actions ?? []
       })),
+      handoverSessions: seed.handoverSessions,
       loadCategories: seed.loadCategories
     };
 

@@ -2,7 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, KeyRound, RefreshCw, Settings, Shield, Sparkles, Wand2 } from "lucide-react";
+import {
+  Database,
+  FileText,
+  Globe,
+  KeyRound,
+  Plane,
+  RefreshCw,
+  Settings,
+  Shield,
+  Sparkles,
+  User,
+  Wand2
+} from "lucide-react";
 
 import { MemberAvatar } from "@/components/shared/member-avatar";
 import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
@@ -11,7 +23,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { useHomeState } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
+import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
 
 const ROUTING_CATEGORIES: TaskCategory[] = [
@@ -26,6 +40,28 @@ const ROUTING_CATEGORIES: TaskCategory[] = [
 
 export function SettingsView() {
   const { members, recipient, documents, mockMode, resetDemo, updateMemberPreferences } = useCareData();
+  const home = useHomeState();
+  const [editingName, setEditingName] = React.useState(false);
+  const [draftName, setDraftName] = React.useState(home.state.caregiver.name ?? "");
+
+  React.useEffect(() => {
+    if (!editingName) {
+      setDraftName(home.state.caregiver.name ?? "");
+    }
+  }, [home.state.caregiver.name, editingName]);
+
+  const language = (home.state.caregiver.language ?? "en") as LanguageCode;
+
+  const handleResetHome = React.useCallback(() => {
+    if (typeof window !== "undefined" && !window.confirm("Reset home state (caregiver + patients)?")) return;
+    home.resetHome();
+  }, [home]);
+
+  const handleResetEverything = React.useCallback(() => {
+    if (typeof window !== "undefined" && !window.confirm("Reset all demo data and home state?")) return;
+    home.resetHome();
+    resetDemo();
+  }, [home, resetDemo]);
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">

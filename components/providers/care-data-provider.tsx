@@ -3,7 +3,16 @@
 import * as React from "react";
 
 import { createSeedData } from "@/lib/seed-data";
-import type { AppData, DocumentRecord, FamilyMember, Handover, Task, TaskCategory, TimelineItem } from "@/lib/types";
+import type {
+  AppData,
+  DocumentRecord,
+  FamilyMember,
+  Handover,
+  HandoverSession,
+  Task,
+  TaskCategory,
+  TimelineItem
+} from "@/lib/types";
 
 type CareDataContextValue = AppData & {
   mockMode: boolean;
@@ -12,6 +21,11 @@ type CareDataContextValue = AppData & {
   addTimelineItem: (item: Omit<TimelineItem, "id" | "timestamp"> & { timestamp?: string }) => TimelineItem;
   addDocument: (document: Omit<DocumentRecord, "id" | "uploadedAt"> & { uploadedAt?: string }) => DocumentRecord;
   addHandover: (handover: Omit<Handover, "id" | "createdAt"> & { createdAt?: string }) => Handover;
+  addHandoverSession: (session: Omit<HandoverSession, "id" | "createdAt"> & { id?: string; createdAt?: string }) => HandoverSession;
+  updateHandoverSession: (sessionId: string, patch: Partial<HandoverSession>) => void;
+  addMember: (member: Omit<FamilyMember, "id"> & { id?: string }) => FamilyMember;
+  updateMember: (memberId: string, patch: Partial<FamilyMember>) => void;
+  removeMember: (memberId: string) => void;
   resetDemo: () => void;
   memberName: (id?: string) => string;
   memberIdByName: (name?: string) => string | undefined;
@@ -190,6 +204,98 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     [mockMode]
   );
 
+  const addHandoverSession = React.useCallback(
+    (session: Omit<HandoverSession, "id" | "createdAt"> & { id?: string; createdAt?: string }) => {
+      const created: HandoverSession = {
+        ...session,
+        id: session.id ?? makeId("handover-session"),
+        createdAt: session.createdAt ?? new Date().toISOString()
+      };
+      setData((current) =>
+        current ? { ...current, handoverSessions: [created, ...(current.handoverSessions ?? [])] } : current
+      );
+
+      if (!mockMode) {
+        void persistJson("/api/data/handover-sessions", { session: created });
+      }
+
+      return created;
+    },
+    [mockMode]
+  );
+
+  const updateHandoverSession = React.useCallback(
+    (sessionId: string, patch: Partial<HandoverSession>) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              handoverSessions: (current.handoverSessions ?? []).map((session) =>
+                session.id === sessionId ? { ...session, ...patch } : session
+              )
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/data/handover-sessions/${sessionId}`, { patch }, "PATCH");
+      }
+    },
+    [mockMode]
+  );
+
+  const addMember = React.useCallback(
+    (member: Omit<FamilyMember, "id"> & { id?: string }) => {
+      const created: FamilyMember = { ...member, id: member.id ?? makeId("member") };
+      setData((current) =>
+        current ? { ...current, members: [...current.members, created] } : current
+      );
+
+      if (!mockMode) {
+        void persistJson("/api/data/members", { member: created });
+      }
+
+      return created;
+    },
+    [mockMode]
+  );
+
+  const updateMember = React.useCallback(
+    (memberId: string, patch: Partial<FamilyMember>) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.map((member) => (member.id === memberId ? { ...member, ...patch } : member))
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/data/members/${memberId}`, { patch }, "PATCH");
+      }
+    },
+    [mockMode]
+  );
+
+  const removeMember = React.useCallback(
+    (memberId: string) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.filter((member) => member.id !== memberId)
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/data/members/${memberId}`, {}, "DELETE");
+      }
+    },
+    [mockMode]
+  );
+
   const updateMemberPreferences = React.useCallback(
     (memberId: string, patch: { categoryPreferences?: TaskCategory[]; loadCapacityPct?: number }) => {
       setData((current) =>
@@ -226,12 +332,34 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       addTimelineItem,
       addDocument,
       addHandover,
+      addHandoverSession,
+      updateHandoverSession,
+      addMember,
+      updateMember,
+      removeMember,
       resetDemo,
       memberName,
       memberIdByName,
       updateMemberPreferences
     }),
-    [addDocument, addHandover, addTasks, addTimelineItem, data, memberIdByName, memberName, mockMode, resetDemo, updateMemberPreferences, updateTask]
+    [
+      addDocument,
+      addHandover,
+      addHandoverSession,
+      addMember,
+      addTasks,
+      addTimelineItem,
+      data,
+      memberIdByName,
+      memberName,
+      mockMode,
+      removeMember,
+      resetDemo,
+      updateHandoverSession,
+      updateMember,
+      updateMemberPreferences,
+      updateTask
+    ]
   );
 
   if (!data) {

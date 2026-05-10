@@ -5,9 +5,13 @@ import { QrCode, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
 import type { CareRecipient } from "@/lib/types";
 
-type NewPatientDraft = Pick<CareRecipient, "name" | "age" | "relationship" | "country">;
+type NewPatientDraft = Pick<
+  CareRecipient,
+  "name" | "age" | "relationship" | "country" | "language" | "emergencyContacts"
+>;
 
 type Props = {
   open: boolean;
@@ -24,22 +28,46 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
   const [age, setAge] = React.useState("");
   const [relationship, setRelationship] = React.useState(RELATIONSHIPS[0]);
   const [country, setCountry] = React.useState(COUNTRIES[0]);
+  const [language, setLanguage] = React.useState<LanguageCode>("en");
+  const [emergencyName, setEmergencyName] = React.useState("");
+  const [emergencyRelationship, setEmergencyRelationship] = React.useState("");
+  const [emergencyPhone, setEmergencyPhone] = React.useState("");
 
   if (!open) return null;
+
+  const reset = () => {
+    setName("");
+    setAge("");
+    setRelationship(RELATIONSHIPS[0]);
+    setCountry(COUNTRIES[0]);
+    setLanguage("en");
+    setEmergencyName("");
+    setEmergencyRelationship("");
+    setEmergencyPhone("");
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    const emergencyContacts =
+      emergencyName.trim() && emergencyPhone.trim()
+        ? [
+            {
+              name: emergencyName.trim(),
+              relationship: emergencyRelationship.trim() || "Contact",
+              phone: emergencyPhone.trim(),
+            },
+          ]
+        : undefined;
     onCreate({
       name: name.trim(),
       age: Number(age) || 0,
       relationship,
       country,
+      language,
+      emergencyContacts,
     });
-    setName("");
-    setAge("");
-    setRelationship(RELATIONSHIPS[0]);
-    setCountry(COUNTRIES[0]);
+    reset();
     onClose();
   };
 
@@ -52,7 +80,7 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -105,6 +133,42 @@ export function AddPatientModal({ open, onClose, onCreate, onScanQR }: Props) {
               ))}
             </select>
           </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-muted-foreground">Language</span>
+            <select
+              className="mt-1 block w-full rounded-xl border bg-white px-3 py-2 text-sm"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as LanguageCode)}
+            >
+              {SEA_LION_LANGUAGES.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label} · {option.native}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <fieldset className="space-y-2 rounded-2xl border bg-muted/30 p-3">
+            <legend className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Emergency contact (optional)
+            </legend>
+            <Input
+              value={emergencyName}
+              onChange={(e) => setEmergencyName(e.target.value)}
+              placeholder="Contact name"
+            />
+            <Input
+              value={emergencyRelationship}
+              onChange={(e) => setEmergencyRelationship(e.target.value)}
+              placeholder="Relationship (e.g. Daughter)"
+            />
+            <Input
+              value={emergencyPhone}
+              onChange={(e) => setEmergencyPhone(e.target.value)}
+              inputMode="tel"
+              placeholder="+65 …"
+            />
+          </fieldset>
 
           <Button type="submit" className="w-full">
             Start caring

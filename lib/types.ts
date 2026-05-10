@@ -20,15 +20,35 @@ export type TimelineType =
 
 export type SignalSeverity = "normal" | "watch" | "alert";
 
+export type Permission =
+  | "see_care_history"
+  | "get_notified_care_updates"
+  | "create_tasks"
+  | "edit_patient_profile"
+  | "manage_permissions"
+  | "invite_others"
+  | "view_documents"
+  | "edit_care_notes";
+
+export type PermissionSet = Record<Permission, boolean>;
+
+export type CircleRole = "primary_caregiver" | "family_member" | "temporary_caregiver";
+
 export type FamilyMember = {
   id: string;
   name: string;
   role: string;
   avatar: string;
   phone?: string;
+  email?: string;
   isDefaultCaregiver?: boolean;
   categoryPreferences?: TaskCategory[];
   loadCapacityPct?: number;
+  circleRole?: CircleRole;
+  permissions?: PermissionSet;
+  accessExpiresAt?: string;
+  invitedAt?: string;
+  invitedById?: string;
 };
 
 export type RoutingCandidate = {
@@ -51,6 +71,12 @@ export type RoutingContext = {
   now?: Date;
 };
 
+export type EmergencyContact = {
+  name: string;
+  relationship: string;
+  phone: string;
+};
+
 export type CareRecipient = {
   id: string;
   name: string;
@@ -61,6 +87,11 @@ export type CareRecipient = {
   relationship?: string;
   country?: string;
   avatar?: string;
+  medicalConditions?: string[];
+  allergies?: string[];
+  currentMedications?: string[];
+  emergencyContacts?: EmergencyContact[];
+  language?: string;
 };
 
 export type CaregiverProfile = {
@@ -184,6 +215,79 @@ export type Handover = {
   suggestedNextActions: string[];
 };
 
+export type HandoverStatus = "pending" | "in-progress" | "completed" | "expired" | "cancelled";
+
+export type HandoverImage = {
+  id: string;
+  url: string;
+  caption?: string;
+  timestamp?: string;
+  uploaderId?: string;
+};
+
+export type HandoverHistoryEntry = {
+  id: string;
+  date: string;
+  title: string;
+  note?: string;
+  images?: HandoverImage[];
+};
+
+export type HandoverAppointment = {
+  id: string;
+  date: string;
+  title: string;
+  time?: string;
+  location?: string;
+};
+
+export type HandoverCaregiverRef = {
+  memberId: string;
+  name: string;
+  loadPct: number;
+  phone?: string;
+  available?: boolean;
+};
+
+export type HandoverChecklistItem = {
+  id: string;
+  label: string;
+  description?: string;
+  images?: HandoverImage[];
+  completed?: boolean;
+};
+
+export type HandoverAcknowledgments = {
+  briefing: boolean;
+  history: boolean;
+  appointments: boolean;
+  caregivers: boolean;
+  checklist: boolean;
+};
+
+export type HandoverSession = {
+  id: string;
+  circleId: string;
+  careRecipientId: string;
+  departingCaregiverId: string;
+  incomingCaregiverId?: string;
+  briefing: string;
+  careHistory: HandoverHistoryEntry[];
+  upcomingAppointments: HandoverAppointment[];
+  otherCaregivers: HandoverCaregiverRef[];
+  dailyChecklist: HandoverChecklistItem[];
+  images: HandoverImage[];
+  language: string;
+  acknowledgments: HandoverAcknowledgments;
+  fullyAcknowledgedAt?: string;
+  status: HandoverStatus;
+  simulated?: boolean;
+  createdAt: string;
+  expiresAt: string;
+  completedAt?: string;
+  archivedAt?: string;
+};
+
 export type CareLoadCategory = {
   category: TaskCategory | "document handling";
   counts: Record<string, number>;
@@ -197,6 +301,7 @@ export type AppData = {
   documents: DocumentRecord[];
   careSignals: CareSignal[];
   handovers: Handover[];
+  handoverSessions: HandoverSession[];
   loadCategories: CareLoadCategory[];
 };
 
