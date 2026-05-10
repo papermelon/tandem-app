@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { summarizeMemberLoad, topCareLoadMember } from "@/lib/care-load";
 import { formatDay, formatRelative, formatTime } from "@/lib/date";
 import { categoryLabels } from "@/lib/labels";
 
@@ -25,17 +26,8 @@ export function DashboardView() {
   const upcomingAppointments = tasks.filter((task) => task.category === "appointment" || task.category === "transport").slice(0, 3);
   const unclaimed = tasks.filter((task) => task.status === "unclaimed").slice(0, 3);
   const recentUpdates = timeline.slice(0, 4);
-  const totalLoad = loadCategories.reduce(
-    (acc, category) => {
-      Object.entries(category.counts).forEach(([memberId, count]) => {
-        acc[memberId] = (acc[memberId] ?? 0) + count;
-      });
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-  const total = Object.values(totalLoad).reduce((sum, count) => sum + count, 0);
-  const rachelPercent = Math.round(((totalLoad.rachel ?? 0) / total) * 100);
+  const memberLoads = summarizeMemberLoad(members, loadCategories);
+  const heaviestLoad = topCareLoadMember(memberLoads);
   const leadName = memberName("rachel");
 
   return (
@@ -138,8 +130,10 @@ export function DashboardView() {
           <CardContent>
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
-                <div className="text-3xl font-bold">{rachelPercent}%</div>
-                <div className="text-xs text-muted-foreground">Handled by {leadName} this week</div>
+                <div className="text-3xl font-bold">{heaviestLoad?.sharePct ?? 0}%</div>
+                <div className="text-xs text-muted-foreground">
+                  {heaviestLoad ? `Handled by ${heaviestLoad.name} this week` : "No visible actions yet"}
+                </div>
               </div>
               <div className="flex -space-x-2">
                 {members.map((member) => (
@@ -147,9 +141,11 @@ export function DashboardView() {
                 ))}
               </div>
             </div>
-            <ProgressBar value={rachelPercent} className="h-3" />
+            <ProgressBar value={heaviestLoad?.sharePct ?? 0} className="h-3" />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {leadName} has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              {heaviestLoad
+                ? `${heaviestLoad.name} has handled ${heaviestLoad.count} visible care actions. Use this when deciding who can take the next update.`
+                : "Care load updates as tasks, records, and family updates are added."}
             </p>
             <Button asChild variant="soft" className="mt-4 w-full">
               <Link href="/load">Open care load</Link>

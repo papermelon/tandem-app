@@ -8,15 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { summarizeMemberLoad, topCareLoadMember } from "@/lib/care-load";
 import { categoryLabels } from "@/lib/labels";
 
 export function LoadView() {
   const { members, loadCategories, memberName } = useCareData();
-  const totals = members.map((member) => ({
-    ...member,
-    count: loadCategories.reduce((sum, category) => sum + (category.counts[member.id] ?? 0), 0)
-  }));
-  const totalCount = totals.reduce((sum, member) => sum + member.count, 0);
+  const totals = summarizeMemberLoad(members, loadCategories);
+  const heaviestLoad = topCareLoadMember(totals);
   const rachel = totals.find((member) => member.id === "rachel");
   const leadName = memberName("rachel");
 
@@ -36,7 +34,6 @@ export function LoadView() {
           </CardHeader>
           <CardContent className="space-y-4">
             {totals.map((member) => {
-              const percent = Math.round((member.count / totalCount) * 100);
               return (
                 <div key={member.id}>
                   <div className="mb-2 flex items-center justify-between gap-3">
@@ -47,9 +44,9 @@ export function LoadView() {
                         <div className="text-xs text-muted-foreground">{member.role}</div>
                       </div>
                     </div>
-                    <Badge variant={member.id === "rachel" ? "warning" : "default"}>{percent}%</Badge>
+                    <Badge variant={member.id === heaviestLoad?.id ? "warning" : "default"}>{member.sharePct}%</Badge>
                   </div>
-                  <ProgressBar value={percent} indicatorClassName={member.id === "rachel" ? "bg-secondary" : undefined} />
+                  <ProgressBar value={member.sharePct} indicatorClassName={member.id === heaviestLoad?.id ? "bg-secondary" : undefined} />
                 </div>
               );
             })}
@@ -65,7 +62,9 @@ export function LoadView() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-bold leading-7">
-              {leadName} has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              {heaviestLoad
+                ? `${heaviestLoad.name} has handled ${heaviestLoad.sharePct}% of visible care actions this week. Consider assigning the next transferable task to someone with lighter load.`
+                : "No care actions have been logged yet this week."}
             </p>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               This view focuses on transferability: what context is needed, what can be picked up, and where support can be shared.

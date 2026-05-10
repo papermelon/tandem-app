@@ -1,8 +1,8 @@
 import { offsetDate } from "@/lib/date";
+import { computeCareLoadCategories } from "@/lib/care-load";
 import { defaultPermissions } from "@/lib/permissions";
 import type {
   AppData,
-  CareLoadCategory,
   CareSignal,
   DocumentRecord,
   FamilyMember,
@@ -398,17 +398,7 @@ export function createSeedData(caregiverName = "Rachel"): AppData {
     }
   ];
 
-  const loadCategories: CareLoadCategory[] = [
-    { category: "appointment", counts: { rachel: 4, ming: 1, lina: 1 } },
-    { category: "transport", counts: { rachel: 3, ming: 1, lina: 0 } },
-    { category: "admin", counts: { rachel: 2, ming: 0, lina: 3 } },
-    { category: "medication", counts: { rachel: 5, ming: 0, lina: 1 } },
-    { category: "check-in", counts: { rachel: 4, ming: 2, lina: 1 } },
-    { category: "finance", counts: { rachel: 1, ming: 2, lina: 0 } },
-    { category: "document handling", counts: { rachel: 2, ming: 0, lina: 3 } }
-  ];
-
-  return personalizeSeedData({
+  const seed: AppData = {
     members,
     recipient: {
       id: "mum",
@@ -461,6 +451,10 @@ export function createSeedData(caregiverName = "Rachel"): AppData {
     careSignals,
     handovers,
     handoverSessions,
-    loadCategories
-  }, caregiverName);
+    loadCategories: []
+  };
+
+  seed.loadCategories = computeCareLoadCategories(seed);
+
+  return personalizeSeedData(seed, caregiverName);
 }

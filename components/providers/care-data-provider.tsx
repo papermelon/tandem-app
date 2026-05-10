@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { computeCareLoadCategories } from "@/lib/care-load";
 import { CARE_DEMO_STORAGE_KEY, shouldForceDemoData } from "@/lib/demo-mode";
 import { createSeedData } from "@/lib/seed-data";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
@@ -415,9 +416,15 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     setLiveError(null);
   }, []);
 
+  const loadCategories = React.useMemo(
+    () => (data ? computeCareLoadCategories(data) : []),
+    [data]
+  );
+
   const value = React.useMemo<CareDataContextValue>(
     () => ({
       ...(data as AppData),
+      loadCategories,
       mockMode,
       addTasks,
       updateTask,
@@ -443,6 +450,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       addTasks,
       addTimelineItem,
       data,
+      loadCategories,
       memberIdByName,
       memberName,
       mockMode,

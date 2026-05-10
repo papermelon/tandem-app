@@ -12,7 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { summarizeMemberLoad } from "@/lib/care-load";
 import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/demo-mode";
 import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
@@ -30,7 +32,7 @@ const ROUTING_CATEGORIES: TaskCategory[] = [
 ];
 
 export function SettingsView() {
-  const { members, recipient, documents, mockMode, resetDemo, updateMemberPreferences } = useCareData();
+  const { members, recipient, documents, loadCategories, mockMode, resetDemo, updateMemberPreferences } = useCareData();
   const auth = useAuth();
   const home = useHomeState();
   const [editingName, setEditingName] = React.useState(false);
@@ -79,6 +81,8 @@ export function SettingsView() {
   }
 
   const isLiveMode = auth.profile?.mode === "supabase" && !mockMode && !demoForced;
+  const memberLoads = summarizeMemberLoad(members, loadCategories);
+  const loadByMemberId = new Map(memberLoads.map((member) => [member.id, member]));
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
@@ -303,7 +307,7 @@ export function SettingsView() {
         </Card>
       </section>
 
-      <section className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_0.6fr]">
+      <section className="mt-4">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -319,12 +323,13 @@ export function SettingsView() {
               <RoutingPreferenceRow
                 key={member.id}
                 member={member}
+                loadCount={loadByMemberId.get(member.id)?.count ?? 0}
+                loadSharePct={loadByMemberId.get(member.id)?.sharePct ?? 0}
                 onSave={(patch) => updateMemberPreferences(member.id, patch)}
               />
             ))}
           </CardContent>
         </Card>
-        <RoutingTelemetryCard />
       </section>
     </div>
   );
@@ -392,96 +397,15 @@ function InviteFamilyMemberForm({ disabled }: { disabled: boolean }) {
   );
 }
 
-type RoutingTelemetry = {
-  total: number;
-  resolved: number;
-  autoExecuted: number;
-  acceptanceRate: number | null;
-  reassignmentRate: number | null;
-  medianTimeToClaimMinutes: number | null;
-};
-
-function RoutingTelemetryCard() {
-  const [telemetry, setTelemetry] = React.useState<RoutingTelemetry | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    fetch("/api/routing/telemetry", { cache: "no-store" })
-      .then((response) => response.json())
-      .then((payload: { telemetry?: RoutingTelemetry }) => {
-        if (!cancelled) setTelemetry(payload.telemetry ?? null);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Routing telemetry</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        {loading ? (
-          <div className="text-muted-foreground">Loading…</div>
-        ) : !telemetry || telemetry.total === 0 ? (
-          <div className="text-muted-foreground">No routing decisions yet.</div>
-        ) : (
-          <>
-            <Metric label="Decisions" value={String(telemetry.total)} />
-            <Metric
-              label="Acceptance"
-              value={formatPercent(telemetry.acceptanceRate)}
-              hint="≥60% target"
-              tone={
-                telemetry.acceptanceRate !== null && telemetry.acceptanceRate >= 0.6
-                  ? "good"
-                  : telemetry.acceptanceRate !== null
-                    ? "warn"
-                    : undefined
-              }
-            />
-            <Metric label="Reassigned <4h" value={formatPercent(telemetry.reassignmentRate)} />
-            <Metric
-              label="Median time to claim"
-              value={telemetry.medianTimeToClaimMinutes !== null ? `${Math.round(telemetry.medianTimeToClaimMinutes)} min` : "—"}
-            />
-            <Metric label="Auto-executed" value={String(telemetry.autoExecuted)} />
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Metric({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "good" | "warn" }) {
-  const toneClass = tone === "good" ? "text-emerald-600" : tone === "warn" ? "text-amber-600" : "text-foreground";
-  return (
-    <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2">
-      <div className="text-xs text-muted-foreground">
-        {label}
-        {hint ? <span className="ml-1 text-[10px]">({hint})</span> : null}
-      </div>
-      <div className={`text-sm font-bold ${toneClass}`}>{value}</div>
-    </div>
-  );
-}
-
-function formatPercent(value: number | null) {
-  if (value === null) return "—";
-  return `${Math.round(value * 100)}%`;
-}
-
 function RoutingPreferenceRow({
   member,
+  loadCount,
+  loadSharePct,
   onSave
 }: {
   member: FamilyMember;
+  loadCount: number;
+  loadSharePct: number;
   onSave: (patch: { categoryPreferences?: TaskCategory[]; loadCapacityPct?: number }) => void;
 }) {
   const [prefs, setPrefs] = React.useState<TaskCategory[]>(member.categoryPreferences ?? []);
@@ -543,8 +467,19 @@ function RoutingPreferenceRow({
       </div>
 
       <div className="mt-3">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
+          <span>Care load this week</span>
+          <span className="text-foreground">{loadSharePct}%</span>
+        </div>
+        <ProgressBar value={loadSharePct} />
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Based on {loadCount} visible care {loadCount === 1 ? "action" : "actions"} from tasks, records, and updates.
+        </p>
+      </div>
+
+      <div className="mt-3">
         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <span>Load capacity</span>
+          <span>Availability capacity</span>
           <span className="text-foreground">{capacity}%</span>
         </div>
         <input
@@ -562,6 +497,9 @@ function RoutingPreferenceRow({
           <span>100%</span>
           <span>200%</span>
         </div>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Used by Smart Assign to avoid overloading someone who has less available capacity.
+        </p>
       </div>
 
       <div className="mt-3 flex items-center justify-end gap-2">
