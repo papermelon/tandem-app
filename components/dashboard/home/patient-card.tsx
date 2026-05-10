@@ -66,7 +66,7 @@ export function PatientCard({
             <Button asChild variant="soft" className="gap-2">
               <Link href={`/capture?patientId=${encodeURIComponent(patient.id)}&patientName=${encodeURIComponent(patient.name)}`}>
                 <Plus className="size-4" />
-                New instruction
+                Add update
               </Link>
             </Button>
           </div>

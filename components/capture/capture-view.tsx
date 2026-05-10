@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AudioLines, Check, FilePlus2, HeartPulse, Loader2, Mic, Paperclip, Sparkles, UploadCloud } from "lucide-react";
 
-import { PageHeading } from "@/components/shared/page-heading";
+import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,32 +30,36 @@ export function CaptureView() {
   const patientName = params?.get("patientName") ?? null;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeading
-        eyebrow="Capture"
-        title="Make sense of the paperwork"
-        description="Upload a memo, letter, appointment slip, or bill. Tandem pulls out the dates, tasks, and family updates for review."
-        icon={Sparkles}
-      />
+    <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
+      <MobilePageHeader title="Add update" icon={Sparkles} backHref="/" />
+
+      <section className="mb-4 space-y-2">
+        <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Update</div>
+        <h1 className="text-2xl font-bold tracking-normal text-foreground">Add care update</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Upload paperwork or record a voice note. Tandem turns it into a draft for family review.
+        </p>
+      </section>
 
       {patientName ? (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
           <HeartPulse className="size-4 text-primary" />
           <span>
-            New update for{" "}
-            <span className="font-bold text-foreground">{patientName}</span>.
+            For <span className="font-bold text-foreground">{patientName}</span>
           </span>
         </div>
       ) : null}
 
       <div className="mb-4 grid grid-cols-2 rounded-2xl border bg-white/80 p-1">
         <button
+          type="button"
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "image" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("image")}
         >
           Paperwork
         </button>
         <button
+          type="button"
           className={`rounded-xl px-3 py-2 text-sm font-semibold ${mode === "voice" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
           onClick={() => setMode("voice")}
         >
@@ -109,7 +113,7 @@ function ImageCapture() {
   }
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+    <section className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -280,7 +284,7 @@ function VoiceCapture() {
   }
 
   return (
-    <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+    <section className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

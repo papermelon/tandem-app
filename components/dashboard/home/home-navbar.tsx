@@ -6,7 +6,7 @@ import { Home, Settings, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/", label: "Home", icon: Home, match: (p: string) => p === "/" || p.startsWith("/home") },
+  { href: "/", label: "Home", icon: Home, match: (p: string) => p === "/" || p.startsWith("/home") || p.startsWith("/capture") },
   { href: "/handover", label: "Health", icon: Stethoscope, match: (p: string) => p.startsWith("/handover") },
   { href: "/settings", label: "Settings", icon: Settings, match: (p: string) => p.startsWith("/settings") },
 ];

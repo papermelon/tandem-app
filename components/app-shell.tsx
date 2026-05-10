@@ -19,7 +19,7 @@ const primaryNav = [
 
 const secondaryNav = [
   { href: "/timeline", label: "Timeline", icon: MessageCircle },
-  { href: "/capture", label: "Add paperwork", icon: Upload },
+  { href: "/capture", label: "Add update", icon: Upload },
   { href: "/meeting", label: "Meeting", icon: Mic },
   { href: "/load", label: "Care load", icon: LineChart }
 ];
@@ -33,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname?.startsWith("/auth") ||
     pathname === "/" ||
     pathname?.startsWith("/home") ||
+    pathname?.startsWith("/capture") ||
     pathname?.startsWith("/handover") ||
     pathname?.startsWith("/settings")
   ) {
