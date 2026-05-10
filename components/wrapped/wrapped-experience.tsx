@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronLeft, X } from "lucide-react";
 
 import { computeWrappedSnapshot } from "@/lib/caregiver-wrapped/compute";
@@ -33,10 +34,28 @@ const GRADIENTS = [
 
 export function WrappedExperience({ memberId, seed }: Props) {
   const data = useCareData();
+  const router = useRouter();
   const snapshot = React.useMemo<WrappedSnapshot | null>(
     () => computeWrappedSnapshot(data, memberId, { seed }),
     [data, memberId, seed]
   );
+
+  const closableSessions = (data.handoverSessions ?? []).filter(
+    (session) =>
+      session.departingCaregiverId === memberId &&
+      session.status === "completed" &&
+      !session.archivedAt
+  );
+
+  const onEndHandover = closableSessions.length > 0
+    ? () => {
+        const archivedAt = new Date().toISOString();
+        for (const session of closableSessions) {
+          data.updateHandoverSession(session.id, { archivedAt });
+        }
+        router.push("/handover");
+      }
+    : undefined;
 
   const [index, setIndex] = React.useState(0);
   const cardCount = 7;
@@ -129,7 +148,13 @@ export function WrappedExperience({ memberId, seed }: Props) {
 
       <main className="flex-1 overflow-y-auto px-5 py-6 sm:px-10 sm:py-10">
         <div className="mx-auto flex h-full max-w-xl items-center justify-center">
-          <CardSwitch index={index} snapshot={snapshot} onShare={next} onRestart={() => setIndex(0)} />
+          <CardSwitch
+            index={index}
+            snapshot={snapshot}
+            onShare={next}
+            onRestart={() => setIndex(0)}
+            onEndHandover={onEndHandover}
+          />
         </div>
       </main>
 
@@ -164,12 +189,14 @@ function CardSwitch({
   index,
   snapshot,
   onShare,
-  onRestart
+  onRestart,
+  onEndHandover
 }: {
   index: number;
   snapshot: WrappedSnapshot;
   onShare: () => void;
   onRestart: () => void;
+  onEndHandover?: () => void;
 }) {
   switch (index) {
     case 0:
@@ -186,6 +213,13 @@ function CardSwitch({
       return <KeyMomentsCard snapshot={snapshot} />;
     case 6:
     default:
-      return <ThankYouCard snapshot={snapshot} onShare={onShare} onRestart={onRestart} />;
+      return (
+        <ThankYouCard
+          snapshot={snapshot}
+          onShare={onShare}
+          onRestart={onRestart}
+          onEndHandover={onEndHandover}
+        />
+      );
   }
 }

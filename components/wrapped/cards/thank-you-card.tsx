@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, RotateCcw, Send, Share2 } from "lucide-react";
+import { Check, Copy, PlaneLanding, RotateCcw, Send, Share2 } from "lucide-react";
 
 import type { WrappedSnapshot } from "@/lib/caregiver-wrapped/types";
 
@@ -9,9 +9,10 @@ type Props = {
   snapshot: WrappedSnapshot;
   onShare: () => void;
   onRestart: () => void;
+  onEndHandover?: () => void;
 };
 
-export function ThankYouCard({ snapshot, onRestart }: Props) {
+export function ThankYouCard({ snapshot, onRestart, onEndHandover }: Props) {
   const [copied, setCopied] = React.useState(false);
   const [shareUrl, setShareUrl] = React.useState("");
 
@@ -98,6 +99,17 @@ export function ThankYouCard({ snapshot, onRestart }: Props) {
           Watch again
         </button>
       </div>
+
+      {onEndHandover ? (
+        <button
+          type="button"
+          onClick={onEndHandover}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-900 shadow-sm transition-all hover:bg-white/90"
+        >
+          <PlaneLanding className="size-4" />
+          End handover
+        </button>
+      ) : null}
     </div>
   );
 }
