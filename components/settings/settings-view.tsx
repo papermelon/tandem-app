@@ -2,7 +2,24 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Database, FileText, Globe, KeyRound, Mail, Plane, RefreshCw, Settings, Sparkles, User, Wand2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Copy,
+  Database,
+  ExternalLink,
+  FileText,
+  Globe,
+  KeyRound,
+  Mail,
+  MessageCircle,
+  Plane,
+  RefreshCw,
+  Settings,
+  Shield,
+  Sparkles,
+  User,
+  Wand2
+} from "lucide-react";
 
 import { SignOutButton, useAuth } from "@/components/auth/auth-provider";
 import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
@@ -19,6 +36,7 @@ import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeH
 import { useT } from "@/lib/i18n";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
 
 const ROUTING_CATEGORIES: TaskCategory[] = [
@@ -229,6 +247,39 @@ export function SettingsView() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-primary" />
+              Telegram sync
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TelegramConnectCard
+              careRecipientId={recipient.id}
+              isLiveMode={isLiveMode}
+              recipientName={recipient.name}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="size-5 text-primary" />
+              Care recipient
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-2xl bg-primary/5 p-4">
+              <div className="text-2xl font-bold">{recipient.name}, {recipient.age}</div>
+              <div className="mt-1 text-sm leading-6 text-muted-foreground">{recipient.context}</div>
+              <div className="mt-3 rounded-xl bg-white/75 px-3 py-2 text-sm font-semibold">{recipient.address}</div>
+              <CareProfileSummary profile={recipient.careProfile} phone={recipient.phone} compact className="mt-4" />
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mt-4 space-y-4">
@@ -238,22 +289,35 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((member) => (
-              <div key={member.id} className="flex flex-col gap-3 rounded-2xl border bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
+              <div key={member.id} className="rounded-2xl border bg-white/70 p-3">
+                <div className="grid grid-cols-[auto_1fr] gap-3">
                   <MemberAvatar avatar={member.avatar} name={member.name} />
-                  <div>
-                    <div className="font-semibold">{member.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.phone ? `${member.role} · ${member.phone}` : member.role}</div>
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <div className="truncate font-semibold">{member.name}</div>
+                      {member.isDefaultCaregiver ? (
+                        <Badge variant="secondary" className="shrink-0 px-2 py-0.5 text-[11px]">
+                          Default
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                      {member.phone ? `${member.role} · ${member.phone}` : member.role}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {!member.isDefaultCaregiver ? (
+                        <Badge variant="outline" className="shrink-0 px-2 py-0.5 text-[11px]">
+                          Can help
+                        </Badge>
+                      ) : null}
+                      <Button asChild variant="soft" size="sm" className="h-8 rounded-full px-3 text-xs">
+                        <Link href={`/wrapped/${member.id}`} aria-label={`View ${member.name}'s Caregiver Wrapped`}>
+                          <Sparkles className="size-3.5" />
+                          Wrapped
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {member.isDefaultCaregiver ? <Badge variant="secondary">Default</Badge> : <Badge variant="outline">Can help</Badge>}
-                  <Button asChild variant="soft" size="sm">
-                    <Link href={`/wrapped/${member.id}`} aria-label={`View ${member.name}'s Caregiver Wrapped`}>
-                      <Sparkles className="size-3.5" />
-                      Wrapped
-                    </Link>
-                  </Button>
                 </div>
               </div>
             ))}
@@ -378,6 +442,147 @@ function InviteFamilyMemberForm({ disabled }: { disabled: boolean }) {
   );
 }
 
+type TelegramLinkPayload = {
+  token?: string;
+  expiresAt?: string;
+  botUsername?: string | null;
+  botUrl?: string | null;
+  startCommand?: string;
+  recipientName?: string;
+  error?: string;
+};
+
+function TelegramConnectCard({
+  careRecipientId,
+  isLiveMode,
+  recipientName
+}: {
+  careRecipientId: string;
+  isLiveMode: boolean;
+  recipientName: string;
+}) {
+  const [link, setLink] = React.useState<TelegramLinkPayload | null>(null);
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [copied, setCopied] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  async function createLink() {
+    setLoading(true);
+    setMessage(null);
+    setCopied(false);
+
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+      const token = data.session?.access_token;
+
+      if (!token) {
+        setMessage("Sign in to Live Supabase before connecting Telegram.");
+        setLink(null);
+        return;
+      }
+
+      const response = await fetch("/api/telegram/link", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ careRecipientId })
+      });
+      const payload = (await response.json().catch(() => ({}))) as TelegramLinkPayload;
+
+      if (!response.ok) {
+        setMessage(payload.error ?? "Could not create a Telegram link.");
+        setLink(null);
+        return;
+      }
+
+      setLink(payload);
+    } catch {
+      setMessage("Could not create a Telegram link.");
+      setLink(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function copyCommand() {
+    if (!link?.startCommand) return;
+    try {
+      await navigator.clipboard.writeText(link.startCommand);
+      setCopied(true);
+    } catch {
+      setMessage("Could not copy the command.");
+    }
+  }
+
+  return (
+    <div className={`rounded-2xl border p-3 ${isLiveMode ? "bg-white/70" : "bg-muted/40"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold">Telegram capture</div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {isLiveMode
+              ? `Link forwarded care notes to ${recipientName}'s live care space.`
+              : "Available after signing in to the Live Supabase care space."}
+          </p>
+        </div>
+        <Badge variant={isLiveMode ? "success" : "warning"} className="shrink-0">
+          {isLiveMode ? "Live" : "Live only"}
+        </Badge>
+      </div>
+
+      <Button
+        className="mt-3 w-full"
+        variant={isLiveMode ? "default" : "outline"}
+        onClick={createLink}
+        disabled={!isLiveMode || loading}
+      >
+        <MessageCircle className="size-4" />
+        {loading ? "Creating link" : "Connect Telegram"}
+      </Button>
+
+      {link?.startCommand ? (
+        <div className="mt-3 rounded-xl border bg-white/80 p-3">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <CheckCircle2 className="size-3.5 text-primary" />
+            Link ready
+          </div>
+          {link.botUrl ? (
+            <Button asChild variant="soft" size="sm" className="mt-2 w-full">
+              <a href={link.botUrl} target="_blank" rel="noreferrer">
+                Open Telegram
+                <ExternalLink className="size-3.5" />
+              </a>
+            </Button>
+          ) : null}
+          <div className="mt-2 flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-muted px-2 py-2 text-xs">
+              {link.startCommand}
+            </code>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-9 shrink-0"
+              onClick={copyCommand}
+              aria-label="Copy Telegram start command"
+            >
+              {copied ? <CheckCircle2 className="size-4" /> : <Copy className="size-4" />}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            This token expires in 15 minutes and links only this Telegram sender.
+          </p>
+        </div>
+      ) : null}
+
+      {message ? <p className="mt-2 text-xs leading-5 text-muted-foreground">{message}</p> : null}
+    </div>
+  );
+}
+
 function RoutingPreferenceRow({
   member,
   loadCount,
@@ -436,7 +641,7 @@ function RoutingPreferenceRow({
                 type="button"
                 onClick={() => toggle(category)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-5 transition ${
                   active ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-white text-foreground"
                 }`}
               >
@@ -447,46 +652,48 @@ function RoutingPreferenceRow({
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <span>Care load this week</span>
-          <span className="text-foreground">{loadSharePct}%</span>
+      <div className="mt-3 rounded-xl bg-muted/40 p-3">
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <span>Care load this week</span>
+            <span className="shrink-0 text-foreground">{loadSharePct}%</span>
+          </div>
+          <ProgressBar value={loadSharePct} className="h-1.5" />
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {loadCount} visible care {loadCount === 1 ? "action" : "actions"} from tasks, records, and updates.
+          </p>
         </div>
-        <ProgressBar value={loadSharePct} />
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Based on {loadCount} visible care {loadCount === 1 ? "action" : "actions"} from tasks, records, and updates.
-        </p>
+
+        <div className="mt-3 border-t pt-3">
+          <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <span>Available capacity</span>
+            <span className="shrink-0 text-foreground">{capacity}%</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={200}
+            step={10}
+            value={capacity}
+            onChange={(event) => setCapacity(Number(event.target.value))}
+            aria-label={`${member.name} available capacity`}
+            className="mt-2 w-full accent-primary"
+          />
+          <div className="grid grid-cols-3 text-[10px] text-muted-foreground">
+            <span>50%</span>
+            <span className="text-center">100%</span>
+            <span className="text-right">200%</span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Used by Smart Assign when balancing new tasks.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <span>Availability capacity</span>
-          <span className="text-foreground">{capacity}%</span>
-        </div>
-        <input
-          type="range"
-          min={50}
-          max={200}
-          step={10}
-          value={capacity}
-          onChange={(event) => setCapacity(Number(event.target.value))}
-          aria-label={`${member.name} load capacity`}
-          className="mt-2 w-full accent-primary"
-        />
-        <div className="flex justify-between text-[10px] text-muted-foreground">
-          <span>50%</span>
-          <span>100%</span>
-          <span>200%</span>
-        </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Used by Smart Assign to avoid overloading someone who has less available capacity.
-        </p>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end gap-2">
-        {savedAt && !dirty ? <span className="text-xs text-muted-foreground">Saved</span> : null}
-        <Button size="sm" onClick={save} disabled={!dirty}>
-          Save preferences
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">{savedAt && !dirty ? "Saved" : dirty ? "Unsaved changes" : "Up to date"}</span>
+        <Button size="sm" onClick={save} disabled={!dirty} className="h-8 rounded-full px-4 text-xs">
+          Save
         </Button>
       </div>
     </div>
