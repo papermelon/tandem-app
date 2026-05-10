@@ -9,6 +9,8 @@ import { computeWrappedSnapshot } from "@/lib/caregiver-wrapped/compute";
 import type { WrappedSnapshot } from "@/lib/caregiver-wrapped/types";
 import { useCareData } from "@/components/providers/care-data-provider";
 import { cn } from "@/lib/utils";
+import { WrappedBackground } from "@/components/wrapped/background/wrapped-background";
+import { SCENES } from "@/components/wrapped/background/scenes";
 import { CoverCard } from "@/components/wrapped/cards/cover-card";
 import { DurationCard } from "@/components/wrapped/cards/duration-card";
 import { TasksCard } from "@/components/wrapped/cards/tasks-card";
@@ -21,16 +23,6 @@ type Props = {
   memberId: string;
   seed?: number;
 };
-
-const GRADIENTS = [
-  "from-indigo-600 via-purple-600 to-pink-500",
-  "from-emerald-500 via-teal-600 to-cyan-700",
-  "from-amber-500 via-orange-600 to-rose-600",
-  "from-slate-800 via-indigo-900 to-purple-900",
-  "from-fuchsia-500 via-rose-500 to-orange-500",
-  "from-sky-500 via-blue-600 to-indigo-700",
-  "from-rose-500 via-pink-500 to-fuchsia-600"
-];
 
 export function WrappedExperience({ memberId, seed }: Props) {
   const data = useCareData();
@@ -106,17 +98,16 @@ export function WrappedExperience({ memberId, seed }: Props) {
     );
   }
 
-  const gradient = GRADIENTS[index % GRADIENTS.length];
+  const scene = SCENES[index % SCENES.length];
 
   return (
     <div
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col overflow-hidden bg-gradient-to-br text-white transition-colors duration-700",
-        gradient
-      )}
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden text-white"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      <WrappedBackground scene={scene} />
+      <div className="relative z-10 flex flex-1 flex-col">
       <header className="flex items-center justify-between px-5 pt-6 sm:px-10">
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
           Caregiver Wrapped
@@ -181,6 +172,7 @@ export function WrappedExperience({ memberId, seed }: Props) {
           <ArrowRight className="size-5" />
         </button>
       </footer>
+      </div>
     </div>
   );
 }

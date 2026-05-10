@@ -1,0 +1,71 @@
+.wrapped-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+
+.wrapped-blob-a {
+  width: 60vmin;
+  height: 60vmin;
+  top: -10vmin;
+  left: -10vmin;
+  animation: wrapped-drift-a 28s ease-in-out infinite alternate;
+}
+
+.wrapped-blob-b {
+  width: 55vmin;
+  height: 55vmin;
+  bottom: -15vmin;
+  right: -10vmin;
+  animation: wrapped-drift-b 34s ease-in-out infinite alternate;
+}
+
+.wrapped-blob-c {
+  width: 45vmin;
+  height: 45vmin;
+  top: 30%;
+  left: 40%;
+  animation: wrapped-drift-c 40s ease-in-out infinite alternate;
+}
+
+@keyframes wrapped-drift-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(8vmin, 6vmin, 0) scale(1.1); }
+}
+
+@keyframes wrapped-drift-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1.05); }
+  100% { transform: translate3d(-10vmin, -4vmin, 0) scale(0.95); }
+}
+
+@keyframes wrapped-drift-c {
+  0%   { transform: translate3d(0, 0, 0) scale(0.95); }
+  100% { transform: translate3d(-6vmin, 8vmin, 0) scale(1.1); }
+}
+
+.wrapped-particle {
+  position: absolute;
+  border-radius: 9999px;
+  background: white;
+  opacity: 0;
+  animation: wrapped-twinkle ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes wrapped-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  50%      { opacity: 0.35; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrapped-blob,
+  .wrapped-particle {
+    animation: none !important;
+  }
+  .wrapped-particle {
+    opacity: 0.2;
+  }
+}
