@@ -13,12 +13,14 @@ import { categoryLabels } from "@/lib/labels";
 import { normalizeDueDate } from "@/lib/task-utils";
 import type { MeetingResult } from "@/lib/types";
 
-const sampleNotes =
-  "Rachel: I can keep doing medication reminders but transport is hard this week. Ming: I can take one morning if I know the appointment details early. Lina: I can handle HDB EASE and AIC paperwork but need the latest doctor memo. Decision: Ming checks rehab transport tomorrow, Lina follows up on contractor quote, Rachel updates medication list. Open question: who is backup if Mum refuses to leave for rehab?";
+function sampleNotes(leadName: string) {
+  return `${leadName}: I can keep doing medication reminders but transport is hard this week. Ming: I can take one morning if I know the appointment details early. Lina: I can handle HDB EASE and AIC paperwork but need the latest doctor memo. Decision: Ming checks rehab transport tomorrow, Lina follows up on contractor quote, ${leadName} updates medication list. Open question: who is backup if Ah Muay refuses to leave for rehab?`;
+}
 
 export function MeetingView() {
-  const { addTasks, addTimelineItem, memberIdByName } = useCareData();
-  const [notes, setNotes] = React.useState(sampleNotes);
+  const { addTasks, addTimelineItem, memberIdByName, memberName } = useCareData();
+  const leadName = memberName("rachel");
+  const [notes, setNotes] = React.useState(() => sampleNotes(leadName));
   const [result, setResult] = React.useState<MeetingResult | null>(null);
   const [mode, setMode] = React.useState<"mock" | "openai" | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -89,7 +91,7 @@ export function MeetingView() {
                 {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
                 Generate
               </Button>
-              <Button variant="outline" onClick={() => setNotes(sampleNotes)}>
+              <Button variant="outline" onClick={() => setNotes(sampleNotes(leadName))}>
                 Use sample
               </Button>
             </div>

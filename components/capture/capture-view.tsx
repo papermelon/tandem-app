@@ -63,7 +63,7 @@ export function CaptureView() {
 function ImageCapture() {
   const { addDocument, addTasks, addTimelineItem, memberIdByName } = useCareData();
   const [file, setFile] = React.useState<File | null>(null);
-  const [context, setContext] = React.useState("Doctor memo from SGH after Mum's fall. Need to coordinate rehab transport and medication list.");
+  const [context, setContext] = React.useState("Doctor memo from SGH after Ah Muay's fall. Need to coordinate rehab transport and medication list.");
   const [result, setResult] = React.useState<ExtractionResult | null>(null);
   const [mode, setMode] = React.useState<"mock" | "openai" | null>(null);
   const [loading, setLoading] = React.useState(false);

@@ -11,13 +11,14 @@ import { useCareData } from "@/components/providers/care-data-provider";
 import { categoryLabels } from "@/lib/labels";
 
 export function LoadView() {
-  const { members, loadCategories } = useCareData();
+  const { members, loadCategories, memberName } = useCareData();
   const totals = members.map((member) => ({
     ...member,
     count: loadCategories.reduce((sum, category) => sum + (category.counts[member.id] ?? 0), 0)
   }));
   const totalCount = totals.reduce((sum, member) => sum + member.count, 0);
   const rachel = totals.find((member) => member.id === "rachel");
+  const leadName = memberName("rachel");
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -64,7 +65,7 @@ export function LoadView() {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-bold leading-7">
-              Rachel has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              {leadName} has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
             </p>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               This view focuses on transferability: what context is needed, what can be picked up, and where support can be shared.
@@ -79,7 +80,7 @@ export function LoadView() {
             </div>
             {rachel ? (
               <div className="mt-4 rounded-2xl border bg-white/75 p-3 text-sm leading-6 text-muted-foreground">
-                Rachel has handled {rachel.count} visible care actions this week. Use this as context for planning, not as a score.
+                {leadName} has handled {rachel.count} visible care actions this week. Use this as context for planning, not as a score.
               </div>
             ) : null}
           </CardContent>

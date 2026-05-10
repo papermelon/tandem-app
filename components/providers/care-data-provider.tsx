@@ -2,9 +2,13 @@
 
 import * as React from "react";
 
+import { useAuth } from "@/components/auth/auth-provider";
+import { CARE_DEMO_STORAGE_KEY, shouldForceDemoData } from "@/lib/demo-mode";
 import { createSeedData } from "@/lib/seed-data";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type {
   AppData,
+  CareRecipient,
   DocumentRecord,
   FamilyMember,
   Handover,
@@ -26,7 +30,8 @@ type CareDataContextValue = AppData & {
   addMember: (member: Omit<FamilyMember, "id"> & { id?: string }) => FamilyMember;
   updateMember: (memberId: string, patch: Partial<FamilyMember>) => void;
   removeMember: (memberId: string) => void;
-  resetDemo: () => void;
+  updateRecipient: (recipientId: string, patch: Partial<CareRecipient>) => void;
+  resetDemo: (caregiverName?: string) => void;
   memberName: (id?: string) => string;
   memberIdByName: (name?: string) => string | undefined;
   updateMemberPreferences: (
@@ -35,7 +40,6 @@ type CareDataContextValue = AppData & {
   ) => void;
 };
 
-const STORAGE_KEY = "tandem-demo-state-v1";
 const CareDataContext = React.createContext<CareDataContextValue | null>(null);
 
 function makeId(prefix: string) {
@@ -50,11 +54,36 @@ function readStoredState() {
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(CARE_DEMO_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as AppData) : null;
   } catch {
     return null;
   }
+}
+
+function renameDefaultCaregiver(data: AppData, name: string): AppData {
+  const displayName = name.trim();
+  if (!displayName) return data;
+
+  return {
+    ...data,
+    members: data.members.map((member) =>
+      member.id === "rachel"
+        ? {
+            ...member,
+            name: displayName,
+            avatar: displayName.slice(0, 1).toUpperCase() || member.avatar,
+          }
+        : member
+    ),
+  };
+}
+
+async function readSupabaseAccessToken() {
+  const supabase = createBrowserSupabaseClient();
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
 }
 
 async function persistJson(path: string, body: unknown, method = "POST") {
@@ -70,40 +99,60 @@ async function persistJson(path: string, body: unknown, method = "POST") {
 }
 
 export function CareDataProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
   const [data, setData] = React.useState<AppData | null>(null);
   const [mockMode, setMockMode] = React.useState(true);
 
   React.useEffect(() => {
-    fetch("/api/demo-data")
-      .then((response) => response.json())
-      .then((payload: { data?: AppData; mockMode?: boolean }) => {
-        if (payload.data) {
+    let cancelled = false;
+    const demoName = auth.profile?.name || "Caregiver";
+
+    if (shouldForceDemoData() || auth.profile?.mode !== "supabase") {
+      setData(renameDefaultCaregiver(readStoredState() ?? createSeedData(demoName), demoName));
+      setMockMode(true);
+      return;
+    }
+
+    setData(null);
+    setMockMode(false);
+
+    readSupabaseAccessToken()
+      .then((token) => {
+        if (!token) throw new Error("Missing Supabase session. Sign out and sign in again.");
+        return fetch("/api/data/live", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      })
+      .then(async (response) => {
+        const payload = (await response.json()) as { data?: AppData; needsOnboarding?: boolean; error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Could not load live care data");
+        if (cancelled) return;
+
+        if (payload.data && !payload.needsOnboarding) {
           setData(payload.data);
-          const isMockMode = Boolean(payload.mockMode);
-          setMockMode(isMockMode);
-          if (!isMockMode) {
-            window.localStorage.removeItem(STORAGE_KEY);
-          }
+          window.localStorage.removeItem(CARE_DEMO_STORAGE_KEY);
           return;
         }
 
-        const storedState = readStoredState();
-        if (storedState) {
-          setData(storedState);
-          setMockMode(true);
-        }
+        setData(renameDefaultCaregiver(createSeedData(demoName), demoName));
+        setMockMode(true);
       })
       .catch(() => {
-        setData(readStoredState() ?? createSeedData());
+        if (cancelled) return;
+        setData(renameDefaultCaregiver(readStoredState() ?? createSeedData(demoName), demoName));
         setMockMode(true);
       });
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.profile?.mode, auth.profile?.name]);
 
   React.useEffect(() => {
     if (!data || !mockMode) return;
 
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      window.localStorage.setItem(CARE_DEMO_STORAGE_KEY, JSON.stringify(data));
     } catch {
       // Local storage is a convenience for the demo, not a hard dependency.
     }
@@ -121,6 +170,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     (name?: string) => {
       if (!name) return undefined;
       const normalized = name.trim().toLowerCase();
+      if (normalized === "rachel" || normalized === "lead caregiver") return "rachel";
       return data?.members.find((member) => member.name.toLowerCase() === normalized)?.id;
     },
     [data]
@@ -316,12 +366,30 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
     [mockMode]
   );
 
-  const resetDemo = React.useCallback(() => {
-    const seed = createSeedData();
-    window.localStorage.removeItem(STORAGE_KEY);
+  const updateRecipient = React.useCallback(
+    (recipientId: string, patch: Partial<CareRecipient>) => {
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              recipient: current.recipient.id === recipientId ? { ...current.recipient, ...patch } : current.recipient
+            }
+          : current
+      );
+
+      if (!mockMode) {
+        void persistJson(`/api/data/care-recipients/${recipientId}`, { patch }, "PATCH");
+      }
+    },
+    [mockMode]
+  );
+
+  const resetDemo = React.useCallback((caregiverName?: string) => {
+    const seed = createSeedData(caregiverName || auth.profile?.name || "Caregiver");
+    window.localStorage.removeItem(CARE_DEMO_STORAGE_KEY);
     setData(seed);
     setMockMode(true);
-  }, []);
+  }, [auth.profile?.name]);
 
   const value = React.useMemo<CareDataContextValue>(
     () => ({
@@ -337,6 +405,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       addMember,
       updateMember,
       removeMember,
+      updateRecipient,
       resetDemo,
       memberName,
       memberIdByName,
@@ -358,6 +427,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
       updateHandoverSession,
       updateMember,
       updateMemberPreferences,
+      updateRecipient,
       updateTask
     ]
   );
@@ -370,7 +440,7 @@ export function CareDataProvider({ children }: { children: React.ReactNode }) {
             T
           </div>
           <div className="mt-4 text-lg font-bold">Loading Tandem</div>
-          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing Mum care circle.</p>
+          <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">Preparing Ah Muay care circle.</p>
         </div>
       </div>
     );

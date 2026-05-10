@@ -46,7 +46,25 @@ export const members: FamilyMember[] = [
   }
 ];
 
-export function createSeedData(): AppData {
+function personalizeSeedData<T>(value: T, caregiverName: string): T {
+  if (typeof value === "string") {
+    return value.replaceAll("Rachel", caregiverName) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => personalizeSeedData(item, caregiverName)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, personalizeSeedData(entry, caregiverName)])
+    ) as T;
+  }
+
+  return value;
+}
+
+export function createSeedData(caregiverName = "Rachel"): AppData {
   const tasks: Task[] = [
     {
       id: "task-rehab-transport",
@@ -56,7 +74,7 @@ export function createSeedData(): AppData {
       status: "unclaimed",
       priority: "high",
       linkedTimelineId: "tl-rehab",
-      notes: "Appointment starts at 10:30am. Mum needs help getting from the taxi drop-off to rehab."
+      notes: "Appointment starts at 10:30am. Ah Muay needs help getting from the taxi drop-off to rehab."
     },
     {
       id: "task-med-refill",
@@ -178,7 +196,7 @@ export function createSeedData(): AppData {
       id: "tl-no-movement",
       type: "care signal",
       title: "No usual morning movement detected by 10:30am",
-      description: "Kitchen and hallway sensors were quiet longer than Mum's usual routine. Rachel completed a video check-in.",
+      description: "Kitchen and hallway sensors were quiet longer than Ah Muay's usual routine. Rachel completed a video check-in.",
       authorId: "rachel",
       timestamp: offsetDate(0, 10, 30),
       severity: "alert",
@@ -203,8 +221,8 @@ export function createSeedData(): AppData {
     {
       id: "tl-voice",
       type: "voice update",
-      title: "Voice note: Mum walked slower today",
-      description: "Rachel noticed Mum taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.",
+      title: "Voice note: Ah Muay walked slower today",
+      description: "Rachel noticed Ah Muay taking smaller steps after lunch. No pain reported, but worth mentioning at rehab.",
       authorId: "rachel",
       timestamp: offsetDate(-2, 14, 5)
     },
@@ -288,7 +306,7 @@ export function createSeedData(): AppData {
       id: "handover-demo",
       createdAt: offsetDate(-1, 22, 0),
       rangeLabel: "Next 7 days",
-      currentSituation: "Mum is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.",
+      currentSituation: "Ah Muay is recovering from a recent fall and has mild dementia. Rehab, medication refill, and HDB EASE admin are the main coordination points.",
       upcomingAppointments: ["SGH rehab tomorrow at 10:30am", "Polyclinic review to be booked"],
       activeTasks: ["Confirm transport", "Refill medication", "Upload contractor quote"],
       medicationReminders: ["Medication refill due in 2 days", "Night reminder coverage needs helper roster confirmation"],
@@ -308,7 +326,7 @@ export function createSeedData(): AppData {
       departingCaregiverId: "rachel",
       incomingCaregiverId: "ming",
       briefing:
-        "Mum is doing well. Recent focus: rehab follow-up after fall, medication adherence, and HDB EASE admin. No acute issues. Appetite is steady.",
+        "Ah Muay is doing well. Recent focus: rehab follow-up after fall, medication adherence, and HDB EASE admin. No acute issues. Appetite is steady.",
       careHistory: [
         {
           id: "hh-1",
@@ -390,16 +408,18 @@ export function createSeedData(): AppData {
     { category: "document handling", counts: { rachel: 2, ming: 0, lina: 3 } }
   ];
 
-  return {
+  return personalizeSeedData({
     members,
     recipient: {
       id: "mum",
-      name: "Mum",
+      name: "Ah Muay",
       age: 78,
       context: "Mild dementia, recent fall, rehab follow-up",
       address: "Ang Mo Kio HDB flat",
       careCircleId: "circle-mum",
+      phone: "+65 8123 4567",
       relationship: "Mother",
+      country: "Singapore",
       medicalConditions: ["Mild dementia", "Hypertension", "Recent fall (left wrist contusion)"],
       allergies: ["Penicillin"],
       currentMedications: ["Donepezil 5mg (mornings)", "Amlodipine 5mg (mornings)", "Calcium + Vitamin D"],
@@ -407,7 +427,33 @@ export function createSeedData(): AppData {
         { name: "Dr. Tan (GP)", relationship: "Family doctor", phone: "+65 6555 0101" },
         { name: "Ming", relationship: "Son", phone: "+65 9111 2233" },
         { name: "Lina", relationship: "Daughter", phone: "+65 9222 3344" }
-      ]
+      ],
+      careProfile: {
+        summary: "Quick reference for meals, mobility, and daily safety checks.",
+        updatedAt: "today",
+        sections: [
+          {
+            label: "Food texture",
+            value: "Soft foods preferred",
+            notes: ["Avoid hard or crunchy food unless someone is supervising.", "Cut meat and fruit into small pieces."]
+          },
+          {
+            label: "Drinks",
+            value: "Warm water or milo",
+            notes: ["Encourage small sips during meals."]
+          },
+          {
+            label: "Mobility",
+            value: "Use walking stick outside",
+            notes: ["Hold her arm on stairs or wet floors."]
+          },
+          {
+            label: "Watch for",
+            value: "Dizziness, missed meals, new confusion",
+            notes: ["Add a note if symptoms appear after medication."]
+          }
+        ]
+      }
     },
     tasks,
     timeline,
@@ -416,5 +462,5 @@ export function createSeedData(): AppData {
     handovers,
     handoverSessions,
     loadCategories
-  };
+  }, caregiverName);
 }

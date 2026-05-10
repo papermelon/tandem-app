@@ -3,8 +3,9 @@
 import * as React from "react";
 import { ArrowRight, ChevronLeft, HeartPulse } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/auth-provider";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useCareData } from "@/components/providers/care-data-provider";
 import { useHomeState } from "@/lib/home-state";
 import { parseHandoverQR, type HandoverPlaintext } from "@/lib/qr-handover";
@@ -12,12 +13,14 @@ import type { CareRecipient } from "@/lib/types";
 
 import { AddPatientModal } from "./add-patient-modal";
 import { ConfirmImportModal } from "./confirm-import-modal";
+import { EditPatientModal } from "./edit-patient-modal";
 import { PatientCard } from "./patient-card";
 import { PatientSelector } from "./patient-selector";
 import { QRScannerModal } from "./qr-scanner-modal";
 
 export function HomeView() {
-  const { tasks, timeline, memberName } = useCareData();
+  const { recipient, tasks, timeline, memberName, mockMode, updateRecipient, resetDemo } = useCareData();
+  const auth = useAuth();
   const home = useHomeState();
 
   const entered = home.state.hasEntered ?? false;
@@ -25,13 +28,24 @@ export function HomeView() {
   const setStage = (next: "selector" | "dashboard") => {
     home.setHasBegunCare(next === "dashboard");
   };
+  const [titleName, setTitleName] = React.useState("");
   const [addOpen, setAddOpen] = React.useState(false);
   const [scanOpen, setScanOpen] = React.useState(false);
+  const [editingPatientId, setEditingPatientId] = React.useState<string | null>(null);
   const [scanError, setScanError] = React.useState<string | null>(null);
   const [pendingImport, setPendingImport] = React.useState<HandoverPlaintext | null>(null);
 
-  const selected = home.state.patients.find((p) => p.id === home.state.selectedPatientId);
-  const otherCount = Math.max(home.state.patients.length - 1, 0);
+  React.useEffect(() => {
+    if (!home.hydrated) return;
+    setTitleName(home.state.caregiver.name);
+  }, [home.hydrated, home.state.caregiver.name]);
+
+  const liveProfileMode = !mockMode && auth.profile?.mode === "supabase";
+  const patients = liveProfileMode ? [recipient] : home.state.patients;
+  const selectedPatientId = liveProfileMode ? recipient.id : home.state.selectedPatientId;
+  const selected = patients.find((p) => p.id === selectedPatientId) ?? patients[0];
+  const editingPatient = patients.find((p) => p.id === editingPatientId) ?? null;
+  const otherCount = Math.max(patients.length - 1, 0);
 
   const handleCreate = (
     draft: Pick<CareRecipient, "name" | "age" | "relationship" | "country" | "language" | "emergencyContacts">,
@@ -60,16 +74,29 @@ export function HomeView() {
       relationship: r.relationship,
       country: r.country,
       avatar: r.avatar,
+      phone: r.phone,
       context: r.context ?? "",
       address: r.address ?? "",
       careCircleId: r.careCircleId,
+      careProfile: r.careProfile,
     });
     setPendingImport(null);
     setStage("dashboard");
   };
 
   if (!entered) {
-    return <SplashForm home={home} />;
+    return (
+      <SplashForm
+        home={home}
+        titleName={titleName}
+        onTitleNameChange={setTitleName}
+        onContinue={(name) => {
+          home.setCaregiverName(name);
+          resetDemo(name);
+          auth.continueAsDemo(name);
+        }}
+      />
+    );
   }
 
   const onSelector = stage === "selector" || !selected;
@@ -122,12 +149,16 @@ export function HomeView() {
 
       {onSelector ? (
         <PatientSelector
-          patients={home.state.patients}
-          selectedId={home.state.selectedPatientId}
-          onSelect={home.selectPatient}
+          patients={patients}
+          selectedId={selectedPatientId}
+          onSelect={(id) => {
+            if (!liveProfileMode) home.selectPatient(id);
+          }}
           onAdd={() => setAddOpen(true)}
+          onEdit={setEditingPatientId}
+          allowAdd={!liveProfileMode}
           onBeginCare={(id) => {
-            home.selectPatient(id);
+            if (!liveProfileMode) home.selectPatient(id);
             setStage("dashboard");
           }}
         />
@@ -139,6 +170,7 @@ export function HomeView() {
           otherPatientCount={otherCount}
           resolveAssigneeName={memberName}
           onAvatarChange={(dataUrl) => home.updatePatient(selected.id, { avatar: dataUrl })}
+          onEdit={() => setEditingPatientId(selected.id)}
         />
       ) : null}
 
@@ -174,17 +206,49 @@ export function HomeView() {
         onCancel={() => setPendingImport(null)}
         onConfirm={confirmImport}
       />
+
+      <EditPatientModal
+        open={Boolean(editingPatient)}
+        patient={editingPatient}
+        onClose={() => setEditingPatientId(null)}
+        onSave={(patch) => {
+          if (!editingPatient) return;
+          if (liveProfileMode) {
+            updateRecipient(editingPatient.id, patch);
+          } else {
+            home.updatePatient(editingPatient.id, patch);
+          }
+          setEditingPatientId(null);
+        }}
+        onRemove={() => {
+          if (!editingPatient || liveProfileMode) return;
+          home.removePatient(editingPatient.id);
+          setEditingPatientId(null);
+          setStage("selector");
+        }}
+        canRemove={!liveProfileMode}
+        liveMode={liveProfileMode}
+      />
     </div>
   );
 }
 
-function SplashForm({ home }: { home: ReturnType<typeof useHomeState> }) {
+function SplashForm({
+  home,
+  titleName,
+  onTitleNameChange,
+  onContinue
+}: {
+  home: ReturnType<typeof useHomeState>;
+  titleName: string;
+  onTitleNameChange: (name: string) => void;
+  onContinue: (name: string) => void;
+}) {
   const [revealed, setRevealed] = React.useState(false);
-  const [username, setUsername] = React.useState("");
   const [feedback, setFeedback] = React.useState<{ kind: "new"; name: string } | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const trimmed = username.trim();
+  const trimmed = titleName.trim();
   const existing = trimmed ? home.findAccount(trimmed) : null;
   const hint = !trimmed
     ? "Enter your username to begin"
@@ -206,6 +270,9 @@ function SplashForm({ home }: { home: ReturnType<typeof useHomeState> }) {
     const result = home.signInOrCreate(trimmed);
     if (result?.isNew) {
       setFeedback({ kind: "new", name: result.name });
+    }
+    if (result) {
+      onContinue(result.name);
     }
   }
 
@@ -233,9 +300,9 @@ function SplashForm({ home }: { home: ReturnType<typeof useHomeState> }) {
             </p>
             <Input
               ref={inputRef}
-              value={username}
+              value={titleName}
               onChange={(event) => {
-                setUsername(event.target.value);
+                onTitleNameChange(event.target.value);
                 setFeedback(null);
               }}
               placeholder="Username"

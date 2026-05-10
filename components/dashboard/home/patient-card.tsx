@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CareProfileSummary } from "@/components/shared/care-profile-summary";
 import type { CareRecipient, Task, TimelineItem } from "@/lib/types";
 
 import { AvatarUploadModal } from "./avatar-upload-modal";
@@ -20,6 +21,7 @@ type Props = {
   otherPatientCount: number;
   resolveAssigneeName: (id?: string) => string;
   onAvatarChange: (dataUrl: string) => void;
+  onEdit: () => void;
 };
 
 export function PatientCard({
@@ -29,6 +31,7 @@ export function PatientCard({
   otherPatientCount,
   resolveAssigneeName,
   onAvatarChange,
+  onEdit,
 }: Props) {
   const [avatarOpen, setAvatarOpen] = React.useState(false);
 
@@ -53,13 +56,20 @@ export function PatientCard({
 
           <UpcomingEventPreview items={timeline} />
           <DailyTasksPreview tasks={tasks} resolveAssigneeName={resolveAssigneeName} />
+          <CareProfileSummary profile={patient.careProfile} phone={patient.phone} compact />
 
-          <Button asChild variant="soft" className="w-full gap-2">
-            <Link href={`/capture?patientId=${encodeURIComponent(patient.id)}&patientName=${encodeURIComponent(patient.name)}`}>
-              <Plus className="size-4" />
-              New instruction
-            </Link>
-          </Button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button variant="outline" className="gap-2" onClick={onEdit}>
+              <Pencil className="size-4" />
+              Edit profile
+            </Button>
+            <Button asChild variant="soft" className="gap-2">
+              <Link href={`/capture?patientId=${encodeURIComponent(patient.id)}&patientName=${encodeURIComponent(patient.name)}`}>
+                <Plus className="size-4" />
+                New instruction
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

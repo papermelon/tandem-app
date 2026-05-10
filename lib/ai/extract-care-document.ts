@@ -27,7 +27,7 @@ const SYSTEM_PROMPT =
   "Extract caregiving coordination information from Singapore family care messages and documents. Do not diagnose, provide medical advice, or invent clinical recommendations. Medication items are reminders or document notes only. Return concise plain English and family-safe task suggestions that the user must review before saving.";
 
 function careContext(context?: string) {
-  return `Care recipient: Mum, 78, mild dementia, recent fall. Family members: Rachel, Ming, Lina. Context from user: ${
+  return `Care recipient: Ah Muay, 78, mild dementia, recent fall. Family members: lead caregiver, Ming, Lina. Context from user: ${
     context || "Forwarded to Tandem for family care coordination."
   }`;
 }

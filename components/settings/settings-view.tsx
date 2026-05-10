@@ -2,28 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import {
-  Database,
-  FileText,
-  Globe,
-  KeyRound,
-  Plane,
-  RefreshCw,
-  Settings,
-  Shield,
-  Sparkles,
-  User,
-  Wand2
-} from "lucide-react";
+import { Database, FileText, Globe, KeyRound, Mail, Plane, RefreshCw, Settings, Shield, Sparkles, User, Wand2 } from "lucide-react";
 
-import { MemberAvatar } from "@/components/shared/member-avatar";
+import { SignOutButton, useAuth } from "@/components/auth/auth-provider";
 import { MobilePageHeader } from "@/components/dashboard/home/mobile-page-header";
+import { MemberAvatar } from "@/components/shared/member-avatar";
+import { CareProfileSummary } from "@/components/shared/care-profile-summary";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCareData } from "@/components/providers/care-data-provider";
-import { useHomeState } from "@/lib/home-state";
+import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/demo-mode";
+import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
@@ -40,28 +31,54 @@ const ROUTING_CATEGORIES: TaskCategory[] = [
 
 export function SettingsView() {
   const { members, recipient, documents, mockMode, resetDemo, updateMemberPreferences } = useCareData();
+  const auth = useAuth();
   const home = useHomeState();
   const [editingName, setEditingName] = React.useState(false);
-  const [draftName, setDraftName] = React.useState(home.state.caregiver.name ?? "");
-
-  React.useEffect(() => {
-    if (!editingName) {
-      setDraftName(home.state.caregiver.name ?? "");
-    }
-  }, [home.state.caregiver.name, editingName]);
-
+  const [draftName, setDraftName] = React.useState(home.state.caregiver.name);
+  const [demoForced, setDemoForced] = React.useState(false);
   const language = (home.state.caregiver.language ?? "en") as LanguageCode;
 
-  const handleResetHome = React.useCallback(() => {
-    if (typeof window !== "undefined" && !window.confirm("Reset home state (caregiver + patients)?")) return;
-    home.resetHome();
-  }, [home]);
+  React.useEffect(() => {
+    setDraftName(home.state.caregiver.name);
+  }, [home.state.caregiver.name]);
 
-  const handleResetEverything = React.useCallback(() => {
-    if (typeof window !== "undefined" && !window.confirm("Reset all demo data and home state?")) return;
-    home.resetHome();
-    resetDemo();
-  }, [home, resetDemo]);
+  React.useEffect(() => {
+    setDemoForced(shouldForceDemoData());
+  }, []);
+
+  function activeCaregiverName() {
+    return auth.profile?.name || home.state.caregiver.name || "Caregiver";
+  }
+
+  function handleShowDemoCircle() {
+    const name = activeCaregiverName();
+    setForceDemoData(true);
+    clearCareDemoData();
+    writeHomeStateSnapshot(createExistingDemoHomeState(name));
+    resetDemo(name);
+    setDemoForced(true);
+    window.location.assign("/");
+  }
+
+  function handleReturnToLive() {
+    setForceDemoData(false);
+    clearCareDemoData();
+    writeHomeStateSnapshot(createFreshHomeState(activeCaregiverName()));
+    setDemoForced(false);
+    window.location.assign("/");
+  }
+
+  function handleResetEverything() {
+    const name = activeCaregiverName();
+    setForceDemoData(true);
+    clearCareDemoData();
+    resetDemo(name);
+    writeHomeStateSnapshot(createExistingDemoHomeState(name));
+    setDemoForced(true);
+    window.location.assign("/");
+  }
+
+  const isLiveMode = auth.profile?.mode === "supabase" && !mockMode && !demoForced;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
@@ -90,7 +107,9 @@ export function SettingsView() {
                   <Button
                     size="sm"
                     onClick={() => {
-                      home.setCaregiverName(draftName.trim());
+                      const nextName = draftName.trim();
+                      home.setCaregiverName(nextName);
+                      resetDemo(nextName);
                       setEditingName(false);
                     }}
                   >
@@ -99,7 +118,7 @@ export function SettingsView() {
                 </div>
               ) : (
                 <div className="mt-2 flex items-center justify-between gap-2">
-                  <div className="font-semibold">{home.state.caregiver.name || "Not set"}</div>
+                  <div className="font-semibold">{home.state.caregiver.name || auth.profile?.name || "Not set"}</div>
                   <Button size="sm" variant="ghost" onClick={() => setEditingName(true)}>
                     Edit
                   </Button>
@@ -143,24 +162,63 @@ export function SettingsView() {
             <div className="rounded-2xl border bg-white/70 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="font-semibold">{mockMode ? "Local mock mode" : "Supabase connected"}</div>
+                  <div className="font-semibold">
+                    {auth.profile?.mode === "supabase" && demoForced
+                      ? "Viewing demo"
+                      : auth.profile?.mode === "supabase" && !mockMode
+                        ? "Signed in with Supabase"
+                        : auth.profile?.mode === "supabase"
+                          ? "Signed in, viewing demo"
+                        : mockMode
+                          ? "Local demo mode"
+                          : "Supabase connected"}
+                  </div>
                   <div className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {mockMode
-                      ? "No backend keys are required for the hackathon demo."
-                      : "Data can be loaded from Supabase tables and Storage."}
+                    {auth.profile?.mode === "supabase" && demoForced
+                      ? "Your live account is still signed in. Demo data is local to this browser."
+                      : auth.profile?.mode === "supabase" && !mockMode
+                        ? auth.profile.email ?? "Authenticated session is active."
+                        : auth.profile?.mode === "supabase"
+                          ? "No live care circle is attached yet, so Tandem is keeping you in the local demo."
+                        : mockMode
+                          ? "No backend keys are required for the local demo."
+                          : "Data can be loaded from Supabase tables and Storage."}
                   </div>
                 </div>
-                <Badge variant={mockMode ? "warning" : "success"}>{mockMode ? "Mock" : "Live"}</Badge>
+                <Badge variant={isLiveMode ? "success" : "warning"}>
+                  {isLiveMode ? "Live" : "Demo"}
+                </Badge>
               </div>
             </div>
-            <Button onClick={handleResetHome} variant="outline" className="w-full">
-              <RefreshCw />
-              Reset home state only
-            </Button>
-            <Button onClick={handleResetEverything} variant="outline" className="w-full">
-              <RefreshCw />
-              Reset all demo data
-            </Button>
+            {auth.profile?.mode === "supabase" ? <SignOutButton className="w-full" /> : <MagicLinkSignIn />}
+            {auth.profile?.mode === "supabase" && demoForced ? (
+              <div className="space-y-2">
+                <Button onClick={handleReturnToLive} className="w-full">
+                  Return to my live care circle
+                </Button>
+                <p className="px-1 text-xs leading-5 text-muted-foreground">
+                  Leaves the demo and reloads only the care circles attached to your Supabase account.
+                </p>
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Button onClick={handleShowDemoCircle} variant="outline" className="w-full">
+                <RefreshCw />
+                View demo circle
+              </Button>
+              <p className="px-1 text-xs leading-5 text-muted-foreground">
+                Intentionally switches this browser to the local Ah Muay demo. Supabase data is not changed.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Button onClick={handleResetEverything} variant="outline" className="w-full">
+                <RefreshCw />
+                Reset local demo records
+              </Button>
+              <p className="px-1 text-xs leading-5 text-muted-foreground">
+                Clears local task, timeline, home, and title-screen changes in this browser only.
+              </p>
+            </div>
             <Button asChild variant="ghost" className="w-full">
               <Link href="/handover">
                 <Plane className="size-4" />
@@ -182,6 +240,7 @@ export function SettingsView() {
               <div className="text-2xl font-bold">{recipient.name}, {recipient.age}</div>
               <div className="mt-1 text-sm leading-6 text-muted-foreground">{recipient.context}</div>
               <div className="mt-3 rounded-xl bg-white/75 px-3 py-2 text-sm font-semibold">{recipient.address}</div>
+              <CareProfileSummary profile={recipient.careProfile} phone={recipient.phone} compact className="mt-4" />
             </div>
           </CardContent>
         </Card>
@@ -199,7 +258,7 @@ export function SettingsView() {
                   <MemberAvatar avatar={member.avatar} name={member.name} />
                   <div>
                     <div className="font-semibold">{member.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.role}</div>
+                    <div className="text-xs text-muted-foreground">{member.phone ? `${member.role} · ${member.phone}` : member.role}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -213,6 +272,7 @@ export function SettingsView() {
                 </div>
               </div>
             ))}
+            <InviteFamilyMemberForm disabled={auth.profile?.mode !== "supabase"} />
           </CardContent>
         </Card>
 
@@ -267,6 +327,68 @@ export function SettingsView() {
         <RoutingTelemetryCard />
       </section>
     </div>
+  );
+}
+
+function MagicLinkSignIn() {
+  const auth = useAuth();
+  const home = useHomeState();
+  const [email, setEmail] = React.useState("");
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [sending, setSending] = React.useState(false);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setSending(true);
+    setMessage(await auth.signInWithEmail({ email, name: home.state.caregiver.name || "Caregiver" }));
+    setSending(false);
+  }
+
+  return (
+    <form className="space-y-2 rounded-2xl border bg-white/70 p-3" onSubmit={submit}>
+      <div className="flex items-center gap-2 text-sm font-bold">
+        <Mail className="size-4 text-primary" />
+        Optional login
+      </div>
+      <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" />
+      <Button type="submit" variant="outline" className="w-full" disabled={!email.trim() || sending}>
+        {sending ? "Sending" : "Email me a Supabase magic link"}
+      </Button>
+      {message ? <p className="text-xs leading-5 text-muted-foreground">{message}</p> : null}
+    </form>
+  );
+}
+
+function InviteFamilyMemberForm({ disabled }: { disabled: boolean }) {
+  const auth = useAuth();
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [message, setMessage] = React.useState<string | null>(null);
+  const [sending, setSending] = React.useState(false);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setSending(true);
+    setMessage(await auth.inviteWithEmail({ email, name }));
+    setSending(false);
+  }
+
+  return (
+    <form className="space-y-2 rounded-2xl border bg-primary/5 p-3" onSubmit={submit}>
+      <div className="flex items-center gap-2 text-sm font-bold">
+        <Mail className="size-4 text-primary" />
+        Add family member
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">
+        Sends a Supabase magic link by email. Handover QR remains separate.
+      </p>
+      <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Name" disabled={disabled} />
+      <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com" disabled={disabled} />
+      <Button type="submit" className="w-full" disabled={disabled || !email.trim() || sending}>
+        {disabled ? "Sign in to invite" : sending ? "Sending" : "Send magic link"}
+      </Button>
+      {message ? <p className="text-xs leading-5 text-muted-foreground">{message}</p> : null}
+    </form>
   );
 }
 

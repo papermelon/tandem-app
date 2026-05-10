@@ -35,7 +35,17 @@ async function deriveKey(): Promise<CryptoKey> {
 export type HandoverPlaintext = {
   recipient: Pick<
     CareRecipient,
-    "id" | "name" | "age" | "relationship" | "country" | "avatar" | "context" | "address" | "careCircleId"
+    | "id"
+    | "name"
+    | "age"
+    | "relationship"
+    | "country"
+    | "avatar"
+    | "phone"
+    | "context"
+    | "address"
+    | "careCircleId"
+    | "careProfile"
   >;
   fromCircleLabel?: string;
   issuedAt: number;

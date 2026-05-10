@@ -92,6 +92,20 @@ export type CareRecipient = {
   currentMedications?: string[];
   emergencyContacts?: EmergencyContact[];
   language?: string;
+  phone?: string;
+  careProfile?: CareProfile;
+};
+
+export type CareProfileSection = {
+  label: string;
+  value: string;
+  notes?: string[];
+};
+
+export type CareProfile = {
+  summary: string;
+  updatedAt?: string;
+  sections: CareProfileSection[];
 };
 
 export type CaregiverProfile = {

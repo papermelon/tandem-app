@@ -2,9 +2,18 @@ import { NextResponse } from "next/server";
 
 import { createSeedData } from "@/lib/seed-data";
 import { createSupabaseAdmin, hasSupabaseServerEnv } from "@/lib/supabase/server";
-import type { AppData } from "@/lib/types";
+import type { AppData, CareProfile } from "@/lib/types";
 
 export const runtime = "nodejs";
+
+function hasCareProfile(profile: unknown): profile is CareProfile {
+  return (
+    typeof profile === "object" &&
+    profile !== null &&
+    Array.isArray((profile as CareProfile).sections) &&
+    (profile as CareProfile).sections.length > 0
+  );
+}
 
 export async function GET() {
   if (!hasSupabaseServerEnv()) {
@@ -48,6 +57,7 @@ export async function GET() {
     }
 
     const seed = createSeedData();
+    const recipientCareProfile = recipientsResult.data?.care_profile;
     const data: AppData = {
       members: (usersResult.data ?? seed.members).map((user) => ({
         id: user.id,
@@ -66,7 +76,11 @@ export async function GET() {
             age: recipientsResult.data.age,
             context: recipientsResult.data.context,
             address: recipientsResult.data.address,
-            careCircleId: recipientsResult.data.care_circle_id
+            careCircleId: recipientsResult.data.care_circle_id,
+            relationship: recipientsResult.data.relationship ?? seed.recipient.relationship,
+            country: recipientsResult.data.country ?? seed.recipient.country,
+            phone: recipientsResult.data.phone ?? seed.recipient.phone,
+            careProfile: hasCareProfile(recipientCareProfile) ? recipientCareProfile : seed.recipient.careProfile
           }
         : seed.recipient,
       timeline: (timelineResult.data ?? []).map((item) => ({

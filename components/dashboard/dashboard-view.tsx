@@ -35,13 +35,14 @@ export function DashboardView() {
   );
   const total = Object.values(totalLoad).reduce((sum, count) => sum + count, 0);
   const rachelPercent = Math.round(((totalLoad.rachel ?? 0) / total) * 100);
+  const leadName = memberName("rachel");
 
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeading
         eyebrow="Family Care Hub"
         title={`${recipient.name}'s week at a glance`}
-        description={`${recipient.age}, ${recipient.context}. Shared context for Rachel, Ming, and Lina without turning care into a cold dashboard.`}
+        description={`${recipient.age}, ${recipient.context}. Shared context for ${leadName}, Ming, and Lina without turning care into a cold dashboard.`}
         icon={HeartPulse}
         badge="Mock mode works without Supabase or OpenAI keys"
       />
@@ -129,7 +130,7 @@ export function DashboardView() {
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <div className="text-3xl font-bold">{rachelPercent}%</div>
-                <div className="text-xs text-muted-foreground">Handled by Rachel this week</div>
+                <div className="text-xs text-muted-foreground">Handled by {leadName} this week</div>
               </div>
               <div className="flex -space-x-2">
                 {members.map((member) => (
@@ -139,7 +140,7 @@ export function DashboardView() {
             </div>
             <ProgressBar value={rachelPercent} className="h-3" />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Rachel has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
+              {leadName} has handled most appointment-related tasks this week. Consider assigning the next transport task to another family member.
             </p>
             <Button asChild variant="soft" className="mt-4 w-full">
               <Link href="/load">Open care load</Link>
