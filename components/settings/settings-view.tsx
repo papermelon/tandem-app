@@ -257,22 +257,35 @@ export function SettingsView() {
           </CardHeader>
           <CardContent className="space-y-3">
             {members.map((member) => (
-              <div key={member.id} className="flex flex-col gap-3 rounded-2xl border bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
+              <div key={member.id} className="rounded-2xl border bg-white/70 p-3">
+                <div className="grid grid-cols-[auto_1fr] gap-3">
                   <MemberAvatar avatar={member.avatar} name={member.name} />
-                  <div>
-                    <div className="font-semibold">{member.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.phone ? `${member.role} · ${member.phone}` : member.role}</div>
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <div className="truncate font-semibold">{member.name}</div>
+                      {member.isDefaultCaregiver ? (
+                        <Badge variant="secondary" className="shrink-0 px-2 py-0.5 text-[11px]">
+                          Default
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                      {member.phone ? `${member.role} · ${member.phone}` : member.role}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {!member.isDefaultCaregiver ? (
+                        <Badge variant="outline" className="shrink-0 px-2 py-0.5 text-[11px]">
+                          Can help
+                        </Badge>
+                      ) : null}
+                      <Button asChild variant="soft" size="sm" className="h-8 rounded-full px-3 text-xs">
+                        <Link href={`/wrapped/${member.id}`} aria-label={`View ${member.name}'s Caregiver Wrapped`}>
+                          <Sparkles className="size-3.5" />
+                          Wrapped
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {member.isDefaultCaregiver ? <Badge variant="secondary">Default</Badge> : <Badge variant="outline">Can help</Badge>}
-                  <Button asChild variant="soft" size="sm">
-                    <Link href={`/wrapped/${member.id}`} aria-label={`View ${member.name}'s Caregiver Wrapped`}>
-                      <Sparkles className="size-3.5" />
-                      Wrapped
-                    </Link>
-                  </Button>
                 </div>
               </div>
             ))}
@@ -455,7 +468,7 @@ function RoutingPreferenceRow({
                 type="button"
                 onClick={() => toggle(category)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-5 transition ${
                   active ? "border-primary bg-primary text-primary-foreground" : "border-muted bg-white text-foreground"
                 }`}
               >
@@ -466,46 +479,48 @@ function RoutingPreferenceRow({
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <span>Care load this week</span>
-          <span className="text-foreground">{loadSharePct}%</span>
+      <div className="mt-3 rounded-xl bg-muted/40 p-3">
+        <div>
+          <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <span>Care load this week</span>
+            <span className="shrink-0 text-foreground">{loadSharePct}%</span>
+          </div>
+          <ProgressBar value={loadSharePct} className="h-1.5" />
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {loadCount} visible care {loadCount === 1 ? "action" : "actions"} from tasks, records, and updates.
+          </p>
         </div>
-        <ProgressBar value={loadSharePct} />
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Based on {loadCount} visible care {loadCount === 1 ? "action" : "actions"} from tasks, records, and updates.
-        </p>
+
+        <div className="mt-3 border-t pt-3">
+          <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <span>Available capacity</span>
+            <span className="shrink-0 text-foreground">{capacity}%</span>
+          </div>
+          <input
+            type="range"
+            min={50}
+            max={200}
+            step={10}
+            value={capacity}
+            onChange={(event) => setCapacity(Number(event.target.value))}
+            aria-label={`${member.name} available capacity`}
+            className="mt-2 w-full accent-primary"
+          />
+          <div className="grid grid-cols-3 text-[10px] text-muted-foreground">
+            <span>50%</span>
+            <span className="text-center">100%</span>
+            <span className="text-right">200%</span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Used by Smart Assign when balancing new tasks.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          <span>Availability capacity</span>
-          <span className="text-foreground">{capacity}%</span>
-        </div>
-        <input
-          type="range"
-          min={50}
-          max={200}
-          step={10}
-          value={capacity}
-          onChange={(event) => setCapacity(Number(event.target.value))}
-          aria-label={`${member.name} load capacity`}
-          className="mt-2 w-full accent-primary"
-        />
-        <div className="flex justify-between text-[10px] text-muted-foreground">
-          <span>50%</span>
-          <span>100%</span>
-          <span>200%</span>
-        </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Used by Smart Assign to avoid overloading someone who has less available capacity.
-        </p>
-      </div>
-
-      <div className="mt-3 flex items-center justify-end gap-2">
-        {savedAt && !dirty ? <span className="text-xs text-muted-foreground">Saved</span> : null}
-        <Button size="sm" onClick={save} disabled={!dirty}>
-          Save preferences
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">{savedAt && !dirty ? "Saved" : dirty ? "Unsaved changes" : "Up to date"}</span>
+        <Button size="sm" onClick={save} disabled={!dirty} className="h-8 rounded-full px-4 text-xs">
+          Save
         </Button>
       </div>
     </div>
