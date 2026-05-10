@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCareData } from "@/components/providers/care-data-provider";
 import { useHomeState } from "@/lib/home-state";
+import { useT } from "@/lib/i18n";
 import { parseHandoverQR, type HandoverPlaintext } from "@/lib/qr-handover";
 import type { CareRecipient } from "@/lib/types";
 
@@ -247,14 +248,15 @@ function SplashForm({
   const [revealed, setRevealed] = React.useState(false);
   const [feedback, setFeedback] = React.useState<{ kind: "new"; name: string } | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const t = useT();
 
   const trimmed = titleName.trim();
   const existing = trimmed ? home.findAccount(trimmed) : null;
   const hint = !trimmed
-    ? "Enter your username to begin"
+    ? t("splash.enterUsername")
     : existing
-      ? `Welcome back, ${existing.name}.`
-      : `We'll create a new account for "${trimmed}".`;
+      ? t("splash.welcomeBack", { name: existing.name })
+      : t("splash.willCreate", { name: trimmed });
 
   React.useEffect(() => {
     if (revealed) {
@@ -298,7 +300,7 @@ function SplashForm({
         >
           <div className="flex flex-col items-center gap-4 px-1 [overflow-y:clip]">
             <p className="text-sm text-muted-foreground" aria-live="polite">
-              {feedback ? `Account created for ${feedback.name}.` : hint}
+              {feedback ? t("splash.accountCreated", { name: feedback.name }) : hint}
             </p>
             <Input
               ref={inputRef}
@@ -307,13 +309,13 @@ function SplashForm({
                 onTitleNameChange(event.target.value);
                 setFeedback(null);
               }}
-              placeholder="Username"
-              aria-label="Username"
+              placeholder={t("splash.username")}
+              aria-label={t("splash.username")}
               autoComplete="username"
               tabIndex={revealed ? 0 : -1}
             />
             <Button type="submit" className="w-full" disabled={!trimmed} tabIndex={revealed ? 0 : -1}>
-              {existing ? "Continue" : "Create account"}
+              {existing ? t("splash.continue") : t("splash.createAccount")}
               <ArrowRight className="size-4" />
             </Button>
           </div>
@@ -324,7 +326,7 @@ function SplashForm({
           }`}
           aria-hidden={revealed}
         >
-          Tap the logo to begin
+          {t("splash.tapLogo")}
         </p>
       </form>
     </div>

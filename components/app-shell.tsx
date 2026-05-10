@@ -7,26 +7,28 @@ import { Bell, ClipboardList, Home, Inbox, LineChart, MessageCircle, Mic, MoreHo
 
 import { Badge } from "@/components/ui/badge";
 import { useCareData } from "@/components/providers/care-data-provider";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const primaryNav = [
-  { href: "/dashboard", label: "Hub", icon: Home },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
-  { href: "/tasks", label: "Tasks", icon: ClipboardList },
-  { href: "/handover", label: "Health", icon: Stethoscope },
-  { href: "/settings", label: "More", icon: MoreHorizontal }
+  { href: "/dashboard", labelKey: "nav.hub", icon: Home },
+  { href: "/inbox", labelKey: "nav.inbox", icon: Inbox },
+  { href: "/tasks", labelKey: "nav.tasks", icon: ClipboardList },
+  { href: "/handover", labelKey: "nav.health", icon: Stethoscope },
+  { href: "/settings", labelKey: "nav.more", icon: MoreHorizontal }
 ];
 
 const secondaryNav = [
-  { href: "/timeline", label: "Timeline", icon: MessageCircle },
-  { href: "/capture", label: "Add update", icon: Upload },
-  { href: "/meeting", label: "Meeting", icon: Mic },
-  { href: "/load", label: "Care load", icon: LineChart }
+  { href: "/timeline", labelKey: "nav.timeline", icon: MessageCircle },
+  { href: "/capture", labelKey: "nav.addUpdate", icon: Upload },
+  { href: "/meeting", labelKey: "nav.meeting", icon: Mic },
+  { href: "/load", labelKey: "nav.careLoad", icon: LineChart }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { recipient } = useCareData();
+  const t = useT();
 
   if (
     pathname?.startsWith("/wrapped") ||
@@ -73,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <Icon className="size-4" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -115,7 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <Icon className="size-3.5" />
-                  {item.label}
+                  {t(item.labelKey)}
                 </Link>
               );
             })}
@@ -145,7 +147,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="size-5" />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">{t(item.labelKey)}</span>
               </Link>
             );
           })}
