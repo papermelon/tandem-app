@@ -12,7 +12,7 @@ import {
   createFreshHomeState,
   writeHomeStateSnapshot,
 } from "@/lib/home-state";
-import { clearCareDemoData, setForceDemoData } from "@/lib/demo-mode";
+import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/demo-mode";
 
 type AuthProfile = {
   id: string;
@@ -66,13 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       const stored = readStoredProfile();
-      if (stored) {
+      if (stored?.mode === "demo") {
         setProfile(stored);
         setLoading(false);
         return;
       }
 
       if (!supabase) {
+        writeStoredProfile(null);
         setLoading(false);
         return;
       }
@@ -81,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const session = data.session;
       const user = session?.user;
       if (!user || cancelled) {
+        writeStoredProfile(null);
         setLoading(false);
         return;
       }
@@ -95,10 +97,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         email: user.email ?? undefined,
         mode: "supabase",
-        onboarding: "existing",
+        onboarding: "new",
       };
-      setForceDemoData(false);
-      writeHomeStateSnapshot(createExistingDemoHomeState(name));
+      if (!shouldForceDemoData()) {
+        setForceDemoData(false);
+        clearCareDemoData();
+        writeHomeStateSnapshot(createFreshHomeState(name));
+      }
       setProfile(nextProfile);
       writeStoredProfile(nextProfile);
       void bootstrapSupabaseProfile(session.access_token, name);
@@ -120,10 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name,
           email: user.email ?? undefined,
           mode: "supabase",
-          onboarding: "existing",
+          onboarding: "new",
         };
         setForceDemoData(false);
-        writeHomeStateSnapshot(createExistingDemoHomeState(name));
+        clearCareDemoData();
+        writeHomeStateSnapshot(createFreshHomeState(name));
         setProfile(nextProfile);
         writeStoredProfile(nextProfile);
         void bootstrapSupabaseProfile(session.access_token, name);

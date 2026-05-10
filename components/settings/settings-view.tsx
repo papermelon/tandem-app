@@ -13,8 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useCareData } from "@/components/providers/care-data-provider";
-import { clearCareDemoData, setForceDemoData } from "@/lib/demo-mode";
-import { useHomeState } from "@/lib/home-state";
+import { clearCareDemoData, setForceDemoData, shouldForceDemoData } from "@/lib/demo-mode";
+import { createExistingDemoHomeState, createFreshHomeState, useHomeState, writeHomeStateSnapshot } from "@/lib/home-state";
 import { categoryLabels } from "@/lib/labels";
 import { SEA_LION_LANGUAGES, type LanguageCode } from "@/lib/languages";
 import type { FamilyMember, TaskCategory } from "@/lib/types";
@@ -35,14 +35,31 @@ export function SettingsView() {
   const home = useHomeState();
   const [editingName, setEditingName] = React.useState(false);
   const [draftName, setDraftName] = React.useState(home.state.caregiver.name);
+  const [demoForced, setDemoForced] = React.useState(false);
   const language = (home.state.caregiver.language ?? "en") as LanguageCode;
 
   React.useEffect(() => {
     setDraftName(home.state.caregiver.name);
   }, [home.state.caregiver.name]);
 
-  function handleResetHome() {
-    auth.continueAsRachel();
+  React.useEffect(() => {
+    setDemoForced(shouldForceDemoData());
+  }, []);
+
+  function handleShowDemoCircle() {
+    setForceDemoData(true);
+    clearCareDemoData();
+    writeHomeStateSnapshot(createExistingDemoHomeState("Rachel"));
+    resetDemo();
+    setDemoForced(true);
+    window.location.assign("/");
+  }
+
+  function handleReturnToLive() {
+    setForceDemoData(false);
+    clearCareDemoData();
+    writeHomeStateSnapshot(createFreshHomeState(auth.profile?.name ?? "Caregiver"));
+    setDemoForced(false);
     window.location.assign("/");
   }
 
@@ -50,8 +67,12 @@ export function SettingsView() {
     setForceDemoData(true);
     clearCareDemoData();
     resetDemo();
-    handleResetHome();
+    writeHomeStateSnapshot(createExistingDemoHomeState("Rachel"));
+    setDemoForced(true);
+    window.location.assign("/");
   }
+
+  const isLiveMode = (auth.profile?.mode === "supabase" && !demoForced) || !mockMode;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col px-4 pb-24">
@@ -133,28 +154,48 @@ export function SettingsView() {
             <div className="rounded-2xl border bg-white/70 p-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="font-semibold">{auth.profile?.mode === "supabase" ? "Signed in with Supabase" : mockMode ? "Local demo mode" : "Supabase connected"}</div>
+                  <div className="font-semibold">
+                    {auth.profile?.mode === "supabase" && demoForced
+                      ? "Viewing Rachel's demo"
+                      : auth.profile?.mode === "supabase"
+                        ? "Signed in with Supabase"
+                        : mockMode
+                          ? "Local demo mode"
+                          : "Supabase connected"}
+                  </div>
                   <div className="mt-1 text-sm leading-6 text-muted-foreground">
-                    {auth.profile?.mode === "supabase"
+                    {auth.profile?.mode === "supabase" && demoForced
+                      ? "Your live account is still signed in. Demo data is local to this browser."
+                      : auth.profile?.mode === "supabase"
                       ? auth.profile.email ?? "Authenticated session is active."
                       : mockMode
                         ? "No backend keys are required for the hackathon demo."
                         : "Data can be loaded from Supabase tables and Storage."}
                   </div>
                 </div>
-                <Badge variant={auth.profile?.mode === "supabase" || !mockMode ? "success" : "warning"}>
-                  {auth.profile?.mode === "supabase" || !mockMode ? "Live" : "Demo"}
+                <Badge variant={isLiveMode ? "success" : "warning"}>
+                  {isLiveMode ? "Live" : "Demo"}
                 </Badge>
               </div>
             </div>
             <SignOutButton className="w-full" />
+            {auth.profile?.mode === "supabase" && demoForced ? (
+              <div className="space-y-2">
+                <Button onClick={handleReturnToLive} className="w-full">
+                  Return to my live care circle
+                </Button>
+                <p className="px-1 text-xs leading-5 text-muted-foreground">
+                  Leaves the Rachel and Ah Muay demo and reloads only the care circles attached to your Supabase account.
+                </p>
+              </div>
+            ) : null}
             <div className="space-y-2">
-              <Button onClick={handleResetHome} variant="outline" className="w-full">
+              <Button onClick={handleShowDemoCircle} variant="outline" className="w-full">
                 <RefreshCw />
-                Show Rachel&apos;s care circle
+                View Rachel&apos;s demo circle
               </Button>
               <p className="px-1 text-xs leading-5 text-muted-foreground">
-                Switches this browser to the local Rachel and Ah Muay demo. Supabase data is not changed.
+                Intentionally switches this browser to the local Rachel and Ah Muay demo. Supabase data is not changed.
               </p>
             </div>
             <div className="space-y-2">
