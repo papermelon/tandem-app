@@ -258,8 +258,10 @@ function SplashForm({
 
   React.useEffect(() => {
     if (revealed) {
-      // Wait for the height transition to start so the focus doesn't fight the animation.
-      const id = window.setTimeout(() => inputRef.current?.focus(), 250);
+      const id = window.setTimeout(
+        () => inputRef.current?.focus({ preventScroll: true }),
+        550
+      );
       return () => window.clearTimeout(id);
     }
   }, [revealed]);
@@ -277,7 +279,7 @@ function SplashForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid w-full place-items-center bg-gradient-to-b from-white to-primary/5 p-8 text-center">
+    <div className="fixed inset-0 z-50 flex w-full flex-col items-center bg-gradient-to-b from-white to-primary/5 px-8 pt-[32vh] text-center">
       <form onSubmit={submit} className="flex w-full max-w-xs flex-col items-center gap-4">
         <button
           type="button"
@@ -289,12 +291,12 @@ function SplashForm({
           <div className="text-5xl font-bold tracking-tight">TANDEM</div>
         </button>
         <div
-          className={`grid w-full transition-all duration-500 ease-out ${
+          className={`grid w-full transition-[grid-template-rows,opacity] duration-500 ease-out ${
             revealed ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
           aria-hidden={!revealed}
         >
-          <div className="flex flex-col items-center gap-4 overflow-hidden">
+          <div className="flex flex-col items-center gap-4 px-1 [overflow-y:clip]">
             <p className="text-sm text-muted-foreground" aria-live="polite">
               {feedback ? `Account created for ${feedback.name}.` : hint}
             </p>
@@ -316,9 +318,14 @@ function SplashForm({
             </Button>
           </div>
         </div>
-        {!revealed ? (
-          <p className="mt-2 text-xs text-muted-foreground">Tap the logo to begin</p>
-        ) : null}
+        <p
+          className={`mt-2 text-xs text-muted-foreground transition-opacity duration-300 ${
+            revealed ? "pointer-events-none opacity-0" : "opacity-100"
+          }`}
+          aria-hidden={revealed}
+        >
+          Tap the logo to begin
+        </p>
       </form>
     </div>
   );
